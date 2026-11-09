@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Register Solar Panel — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="h3 fw-bold mb-1 text-sg-ink">Register Solar Panel</h1>
+                <p class="text-sg-muted small mb-0">Add a solar panel or rooftop array to your monitoring inventory.</p>
+            </div>
+            <a href="{% url 'panel_list' %}" class="btn-sg-outline btn-sm py-1 px-3">
+                <i class="bi bi-arrow-left me-1"></i> Inventory
+            </a>
+        </div>
+
+        <div class="sg-card">
+            <div class="sg-card-header">
+                <h5 class="sg-card-title mb-0">
+                    <i class="bi bi-plus-square-fill text-success"></i> Panel Specifications &amp; Telemetry
+                </h5>
+            </div>
+            <div class="sg-card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="panelSerialInput" class="form-label fw-semibold text-sg-ink">Serial Number / Panel ID <span class="text-danger">*</span></label>
+                            {{ form.serial_number }}
+                            <div class="form-text text-sg-muted small">Unique identifier (e.g. ROOF-NORTH-01 or manufacturer serial).</div>
+                            {% if form.serial_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.serial_number.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="panelLocationInput" class="form-label fw-semibold text-sg-ink">Site Location / Array Zone <span class="text-danger">*</span></label>
+                            {{ form.site_location }}
+                            <div class="form-text text-sg-muted small">Physical installation site (e.g. Rooftop Array Zone 1).</div>
+                            {% if form.site_location.errors %}
+                            <div class="text-danger small mt-1">{{ form.site_location.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="panelInstallDate" class="form-label fw-semibold text-sg-ink">Installation Date (Optional)</label>
+                            {{ form.install_date }}
+                            <div class="form-text text-sg-muted small">Commissioning date if known (leave blank if unknown).</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="panelCleanDate" class="form-label fw-semibold text-sg-ink">Last Cleaned Date (Optional)</label>
+                            {{ form.last_cleaned_date }}
+                            <div class="form-text text-sg-muted small">Used for wash-interval tracking if known.</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'panel_list' %}" class="btn-sg-outline">Cancel</a>
+                        <button type="submit" class="btn-sg-primary px-4 shadow-xs">
+                            <i class="bi bi-check-lg me-1"></i> Save Solar Panel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

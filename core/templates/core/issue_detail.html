@@ -1,0 +1,530 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Work Order #{{ issue.id }}: {{ issue.title }} — SolarGuard{% endblock %}
+
+{% block content %}
+<!-- Top Header & Breadcrumb Navigation -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge rounded-pill px-3 py-1 small fw-semibold
+                {% if issue.status == 'Open' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                {% elif issue.status == 'Assigned' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                {% elif issue.status == 'In Progress' %}bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25
+                {% elif issue.status == 'Resolved' %}bg-success bg-opacity-10 text-success border border-success border-opacity-25
+                {% elif issue.status == 'Closed' %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25
+                {% else %}bg-secondary text-white{% endif %}">
+                {{ issue.status }}
+            </span>
+            <span class="text-sg-muted small">Work Order Ticket #{{ issue.id }}</span>
+            <span class="text-sg-muted small">&bull; Priority:</span>
+            <span class="fw-bold small {% if issue.priority == 'High' %}text-danger{% elif issue.priority == 'Medium' %}text-warning{% else %}text-success{% endif %}">
+                {{ issue.priority }}
+            </span>
+        </div>
+        <h1 class="h3 fw-bold mb-0 text-sg-ink">{{ issue.title }}</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'issue_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Queue
+        </a>
+    </div>
+</div>
+
+<!-- Status Progression Stepper -->
+<div class="card sg-card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 text-center">
+        <!-- Step 1: Open -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle p-2 {% if issue.status == 'Open' or issue.status == 'Assigned' or issue.status == 'In Progress' or issue.status == 'Resolved' or issue.status == 'Closed' %}bg-emerald text-white{% else %}bg-light text-muted border{% endif %}">
+                <i class="bi bi-file-earmark-plus"></i>
+            </span>
+            <span class="small fw-semibold {% if issue.status == 'Open' %}text-emerald fw-bold{% else %}text-sg-muted{% endif %}">Open</span>
+        </div>
+        <i class="bi bi-chevron-right text-muted smaller"></i>
+
+        <!-- Step 2: Assigned -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle p-2 {% if issue.status == 'Assigned' or issue.status == 'In Progress' or issue.status == 'Resolved' or issue.status == 'Closed' %}bg-emerald text-white{% else %}bg-light text-muted border{% endif %}">
+                <i class="bi bi-person-check"></i>
+            </span>
+            <span class="small fw-semibold {% if issue.status == 'Assigned' %}text-emerald fw-bold{% else %}text-sg-muted{% endif %}">Assigned</span>
+        </div>
+        <i class="bi bi-chevron-right text-muted smaller"></i>
+
+        <!-- Step 3: In Progress -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle p-2 {% if issue.status == 'In Progress' or issue.status == 'Resolved' or issue.status == 'Closed' %}bg-emerald text-white{% else %}bg-light text-muted border{% endif %}">
+                <i class="bi bi-wrench"></i>
+            </span>
+            <span class="small fw-semibold {% if issue.status == 'In Progress' %}text-warning fw-bold{% else %}text-sg-muted{% endif %}">In Progress</span>
+        </div>
+        <i class="bi bi-chevron-right text-muted smaller"></i>
+
+        <!-- Step 4: Resolved -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle p-2 {% if issue.status == 'Resolved' or issue.status == 'Closed' %}bg-emerald text-white{% else %}bg-light text-muted border{% endif %}">
+                <i class="bi bi-check2-circle"></i>
+            </span>
+            <span class="small fw-semibold {% if issue.status == 'Resolved' %}text-success fw-bold{% else %}text-sg-muted{% endif %}">Resolved</span>
+        </div>
+        <i class="bi bi-chevron-right text-muted smaller"></i>
+
+        <!-- Step 5: Closed -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle p-2 {% if issue.status == 'Closed' %}bg-dark text-white{% else %}bg-light text-muted border{% endif %}">
+                <i class="bi bi-archive"></i>
+            </span>
+            <span class="small fw-semibold {% if issue.status == 'Closed' %}text-dark fw-bold{% else %}text-sg-muted{% endif %}">Closed</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Work Order Specs, Actions & History -->
+    <div class="col-lg-7">
+
+        <!-- Work Order Details Card -->
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-card-text text-emerald"></i>
+                    <span>Work Order Specifications</span>
+                </h5>
+                <span class="badge bg-light text-secondary border rounded-pill">Target: {{ issue.panel.permanent_id|default:issue.panel.serial_number }}</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="text-sg-muted small">Target Solar Module</div>
+                        <div class="fw-bold text-sg-ink fs-5">
+                            <a href="{% url 'panel_detail' issue.panel.id %}" class="text-decoration-none text-dark" title="View Digital Passport">
+                                {{ issue.panel.permanent_id|default:issue.panel.serial_number }}
+                                <i class="bi bi-box-arrow-up-right fs-6 text-muted ms-1"></i>
+                            </a>
+                        </div>
+                        <div class="text-sg-muted small">{{ issue.installation.name|default:"Home System" }} ({{ issue.panel.site_location }})</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sg-muted small">Date Opened</div>
+                        <div class="fw-semibold text-secondary">{{ issue.created_at|date:"M d, Y H:i" }}</div>
+                        <div class="text-sg-muted smaller">Reported by: {{ issue.user.username|default:"System" }}</div>
+                        {% if issue.resolved_at %}
+                        <div class="text-success small mt-1">
+                            <i class="bi bi-check-circle me-1"></i> Resolved {{ issue.resolved_at|date:"M d, Y" }}
+                        </div>
+                        {% endif %}
+                        {% if issue.closed_at %}
+                        <div class="text-muted small">
+                            <i class="bi bi-archive me-1"></i> Closed {{ issue.closed_at|date:"M d, Y" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <div class="text-sg-muted small mb-1 fw-bold">Issue Description &amp; Remedial Instructions</div>
+                    <div class="p-3 bg-light rounded-4 border text-sg-ink" style="white-space: pre-line;">
+                        {{ issue.description|default:"No description provided." }}
+                    </div>
+                </div>
+
+                <!-- Service Charge & Payment Status (Razorpay Test Mode) -->
+                <div class="p-3 bg-light rounded-4 border mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <div>
+                            <span class="text-sg-muted smaller text-uppercase fw-bold">Service Charge &amp; Settlement</span>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <h4 class="fw-bold text-sg-ink mb-0">₹{{ issue.service_fee|floatformat:2 }}</h4>
+                                {% if issue.payment_status == 'paid' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-patch-check-fill me-1"></i> Paid (Test Mode)
+                                </span>
+                                {% elif issue.payment_status == 'pending' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-hourglass-split me-1"></i> Payment Due
+                                </span>
+                                {% elif issue.payment_status == 'failed' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Payment Failed
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-dash-circle me-1"></i> Unbilled
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Customer Action: Pay or Download Receipt -->
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            {% if issue.payment_status == 'paid' and successful_payment %}
+                            <a href="{% url 'payment_receipt_download' successful_payment.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-xs">
+                                <i class="bi bi-file-earmark-pdf me-1"></i> Download Receipt (PDF)
+                            </a>
+                            {% elif can_pay %}
+                            <a href="{% url 'payment_checkout' issue.id %}" class="btn btn-sm btn-emerald rounded-pill px-4 shadow-xs">
+                                <i class="bi bi-credit-card-2-front-fill me-1"></i> Pay with Razorpay (Test Mode)
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if issue.payment_status == 'paid' and successful_payment %}
+                    <div class="small text-sg-muted border-top pt-2 mt-2">
+                        <i class="bi bi-receipt me-1 text-success"></i>
+                        Receipt #<strong>{{ successful_payment.receipt_number }}</strong> &bull;
+                        Payment ID: <span class="font-monospace text-dark">{{ successful_payment.razorpay_payment_id }}</span> &bull;
+                        Verified: {{ successful_payment.verified_at|date:"M d, Y H:i" }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Admin Charge Adjustment Form -->
+                    {% if user_is_admin and issue.payment_status != 'paid' %}
+                    <div class="border-top pt-3 mt-3">
+                        <form method="POST" class="row g-2 align-items-center">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="set_service_fee">
+                            <div class="col-auto">
+                                <label class="small text-sg-muted fw-bold">Set Service Charge (INR):</label>
+                            </div>
+                            <div class="col-auto">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white">₹</span>
+                                    <input type="number" step="0.01" min="0" name="service_fee" value="{{ issue.service_fee }}" class="form-control form-control-sm" style="width: 120px;" required>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                                    <i class="bi bi-check-lg me-1"></i> Update Charge
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Supporting Photo (if provided by customer) -->
+                {% if issue.supporting_photo %}
+                <div class="mb-4">
+                    <div class="text-sg-muted small mb-1 fw-bold">
+                        <i class="bi bi-camera text-emerald me-1"></i> Supporting Customer Photograph
+                    </div>
+                    <div class="p-2 bg-light rounded-4 border text-center">
+                        <img src="{% url 'secure_maintenance_photo' issue.pk %}" alt="Supporting Photo" class="img-fluid rounded-3" style="max-height: 260px; object-fit: contain;">
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Resolution Notes (if resolved) -->
+                {% if issue.resolution_notes %}
+                <div class="p-3 bg-success-subtle rounded-4 border border-success mb-3">
+                    <div class="fw-bold text-success mb-1 d-flex align-items-center gap-1">
+                        <i class="bi bi-check2-circle"></i> Completed Resolution Summary
+                    </div>
+                    <div class="small text-dark" style="white-space: pre-line;">
+                        {{ issue.resolution_notes }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TECHNICIAN ACTION CONSOLE (Only for Assigned Tech or Admin) -->
+        {% if user_is_assigned_tech or user_is_admin %}
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4 border-start border-4 border-warning">
+            <div class="card-header bg-white border-bottom p-4">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-wrench-adjustable text-warning"></i>
+                    <span>Technician Action Console</span>
+                </h5>
+                <span class="text-sg-muted small">Perform field lifecycle operations on this assigned work order</span>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- Action 1: Start Work (Assigned -> In Progress) -->
+                {% if issue.status == 'Assigned' %}
+                <div class="p-3 bg-light rounded-4 border mb-4">
+                    <h6 class="fw-bold text-sg-ink mb-1">Accept &amp; Begin On-Site Work</h6>
+                    <p class="text-sg-muted small mb-3">Acknowledge this work order and mark it In Progress to notify the customer that service has commenced.</p>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="start_work">
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 shadow-xs">
+                            <i class="bi bi-play-circle me-1"></i> Start Work (Mark In Progress)
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Action 2: Resolve Work Order (In Progress -> Resolved) -->
+                {% if issue.status == 'In Progress' %}
+                <div class="p-3 bg-light rounded-4 border mb-4">
+                    <h6 class="fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                        <i class="bi bi-check2-circle text-success"></i>
+                        <span>Resolve Work Order</span>
+                    </h6>
+                    <p class="text-sg-muted small mb-3">
+                        Enter a mandatory resolution summary explaining corrective actions, washing materials, or replaced components.
+                    </p>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="resolve_work">
+                        <div class="mb-3">
+                            {{ res_form.resolution_notes }}
+                        </div>
+                        <button type="submit" class="btn btn-emerald rounded-pill px-4 shadow-xs">
+                            <i class="bi bi-check-lg me-1"></i> Mark Work Order Resolved
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Action 3: Record Maintenance Field Action -->
+                {% if issue.status == 'In Progress' or issue.status == 'Assigned' %}
+                <div class="border rounded-4 p-3 bg-light">
+                    <h6 class="fw-bold text-sg-ink mb-2">
+                        <i class="bi bi-plus-circle me-1 text-emerald"></i> Record Field Action Log
+                    </h6>
+                    <p class="text-sg-muted small mb-3">Log individual servicing steps (surface cleaning, repairs, diode check) for permanent array records.</p>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_log">
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-sg-ink">Action Type</label>
+                                {{ log_form.action_type }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-sg-ink">Date Performed</label>
+                                {{ log_form.performed_at }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-sg-ink">Work Notes</label>
+                            {{ log_form.notes }}
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                            <i class="bi bi-save me-1"></i> Log Field Action
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ADMIN MANAGEMENT CONSOLE (Assign Technician, Update Priority, Close Ticket) -->
+        {% if user_is_admin %}
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4 border-start border-4 border-primary">
+            <div class="card-header bg-white border-bottom p-4">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-lock text-primary"></i>
+                    <span>Administrator Dispatch &amp; Governance Console</span>
+                </h5>
+                <span class="text-sg-muted small">Allocate certified technicians, adjust priority, or close resolved work orders</span>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- 1. Assign / Reassign Certified Technician -->
+                <div class="p-3 bg-light rounded-4 border mb-4">
+                    <h6 class="fw-bold text-sg-ink mb-2">Assign Certified Technician</h6>
+                    <form method="POST" class="row g-3 align-items-end">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="assign_technician">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-sg-ink">Certified Technician</label>
+                            {{ assign_form.technician }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-sg-ink">Priority</label>
+                            {{ assign_form.priority }}
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-emerald w-100 rounded-pill shadow-xs">
+                                <i class="bi bi-person-check me-1"></i> Assign Tech
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2. Close Resolved Work Order -->
+                {% if issue.status == 'Resolved' %}
+                <div class="p-3 bg-success-subtle rounded-4 border border-success">
+                    <h6 class="fw-bold text-success mb-1">Verify &amp; Close Work Order</h6>
+                    <p class="small text-dark mb-3">Technician has completed the field service. Review the resolution notes and finalize closure.</p>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="close_work">
+                        <div class="mb-3">
+                            <input type="text" name="closure_notes" class="form-control form-control-sm rounded-pill" placeholder="Optional administrator closure remarks...">
+                        </div>
+                        <button type="submit" class="btn btn-dark rounded-pill px-4 shadow-xs">
+                            <i class="bi bi-archive me-1"></i> Confirm &amp; Close Work Order
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Maintenance Action History Log & Audit Trail -->
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-emerald"></i>
+                        <span>Audit Trail &amp; Maintenance Timeline</span>
+                    </h5>
+                    <span class="text-sg-muted small">Immutable historical record of actions and status changes</span>
+                </div>
+                <span class="badge bg-secondary rounded-pill">{{ action_logs|length }} entry{{ action_logs|length|pluralize:"ies" }}</span>
+            </div>
+            <div class="card-body p-4">
+                {% if action_logs %}
+                <ul class="list-group list-group-flush mb-0">
+                    {% for log in action_logs %}
+                    <li class="list-group-item px-0 py-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-1 flex-wrap gap-2">
+                            <div>
+                                <strong class="text-sg-ink">
+                                    {% if log.action_type == 'assignment' %}<i class="bi bi-person-check text-primary me-1"></i>
+                                    {% elif log.action_type == 'status_change' %}<i class="bi bi-arrow-left-right text-warning me-1"></i>
+                                    {% elif log.action_type == 'cleaning' %}<i class="bi bi-droplet-half text-info me-1"></i>
+                                    {% elif log.action_type == 'repair' %}<i class="bi bi-wrench text-danger me-1"></i>
+                                    {% elif log.action_type == 'replacement' %}<i class="bi bi-cpu text-danger me-1"></i>
+                                    {% elif log.action_type == 'resolution' %}<i class="bi bi-check2-circle text-success me-1"></i>
+                                    {% elif log.action_type == 'closure' %}<i class="bi bi-archive text-dark me-1"></i>
+                                    {% else %}<i class="bi bi-journal-text text-secondary me-1"></i>{% endif %}
+                                    {{ log.get_action_type_display }}
+                                </strong>
+                                {% if log.new_status %}
+                                <span class="badge bg-light text-dark border ms-1 small">Status: {{ log.new_status }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-sg-muted small">{{ log.performed_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="text-sg-muted smaller mb-1">
+                            Action by: <strong>{{ log.user.username|default:"System" }}</strong>
+                            {% if log.technician %} &bull; Allocated Tech: <strong>{{ log.technician.username }}</strong>{% endif %}
+                        </div>
+                        {% if log.notes %}
+                        <div class="small text-sg-ink p-2 bg-light rounded-3 border mt-1" style="white-space: pre-line;">
+                            {{ log.notes }}
+                        </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sg-muted small mb-0">No action logs recorded on this work order yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column: Assigned Tech, Originating Inspection & Digital Passport -->
+    <div class="col-lg-5">
+
+        <!-- Assigned Technician Card -->
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge text-emerald"></i>
+                    <span>Assigned Technician</span>
+                </h5>
+            </div>
+            <div class="card-body p-4 text-center">
+                {% if issue.assigned_technician %}
+                <div class="d-inline-flex align-items-center justify-content-center bg-emerald-subtle rounded-circle p-3 mb-2" style="width: 64px; height: 64px;">
+                    <i class="bi bi-person-fill text-emerald fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-sg-ink mb-1">{{ issue.assigned_technician.username }}</h5>
+                <span class="badge bg-emerald-subtle text-emerald rounded-pill small mb-3">
+                    <i class="bi bi-patch-check-fill me-1"></i> Certified SolarGuard Technician
+                </span>
+                <p class="text-sg-muted small mb-0">
+                    Allocated to inspect, wash, or repair module {{ issue.panel.permanent_id|default:issue.panel.serial_number }}.
+                </p>
+                {% else %}
+                <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 rounded-circle p-3 mb-2" style="width: 64px; height: 64px;">
+                    <i class="bi bi-clock-history text-danger fs-2"></i>
+                </div>
+                <h6 class="fw-bold text-sg-ink mb-1">Awaiting Technician Assignment</h6>
+                <p class="text-sg-muted small mb-0">
+                    This work order is queued for administrator triage. A certified technician will be assigned promptly.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Originating Inspection Card (if linked) -->
+        {% if issue.inspection %}
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-camera-fill text-emerald"></i>
+                    <span>Originating AI Inspection</span>
+                </h5>
+            </div>
+            <div class="card-body p-4 text-center">
+                {% if issue.inspection.image %}
+                <img src="{% url 'secure_inspection_image' issue.inspection.id %}" alt="Inspection" class="img-fluid rounded-4 border mb-3 shadow-xs" style="max-height: 220px; width: 100%; object-fit: cover;">
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center mb-2 px-2 small">
+                    <span class="text-sg-muted">AI Surface Finding:</span>
+                    <span class="badge 
+                        {% if 'crack' in issue.inspection.predicted_class|lower or 'damage' in issue.inspection.predicted_class|lower %}bg-danger text-white
+                        {% elif 'bird' in issue.inspection.predicted_class|lower %}bg-warning text-dark
+                        {% elif 'dust' in issue.inspection.predicted_class|lower %}bg-warning-subtle text-dark border
+                        {% elif 'unable' in issue.inspection.predicted_class|lower %}bg-secondary text-white
+                        {% else %}bg-emerald text-white{% endif %} rounded-pill">
+                        {{ issue.inspection.predicted_class }}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2 px-2 small">
+                    <span class="text-sg-muted">Confidence Score:</span>
+                    <span class="fw-bold text-dark">{{ issue.inspection.confidence_score }}%</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2 small">
+                    <span class="text-sg-muted">Technician Verification:</span>
+                    <span class="badge {% if issue.inspection.review_status == 'technician_verified' %}bg-success-subtle text-success{% else %}bg-light text-secondary border{% endif %} rounded-pill">
+                        {{ issue.inspection.get_review_status_display }}
+                    </span>
+                </div>
+
+                <a href="{% url 'result_detail' issue.inspection.id %}" class="btn btn-sm btn-outline-secondary rounded-pill w-100 justify-content-center">
+                    <i class="bi bi-file-earmark-text me-1"></i> View Full Inspection Report
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Follow-up Verification Post-Service Card -->
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-repeat text-emerald"></i>
+                    <span>Follow-Up AI Verification</span>
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-sg-muted small mb-3">
+                    Completing maintenance does not automatically establish normal surface condition. Capture a new photograph of panel <strong>{{ issue.panel.permanent_id|default:issue.panel.serial_number }}</strong> to verify that physical soiling or defects have been cleared.
+                </p>
+                <a href="{% url 'inspect' %}?panel_id={{ issue.panel.id }}" class="btn btn-emerald btn-sm rounded-pill w-100 justify-content-center shadow-xs">
+                    <i class="bi bi-camera me-1"></i> Run Follow-up Inspection
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

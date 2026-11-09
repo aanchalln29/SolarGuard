@@ -1,0 +1,20 @@
+{
+  "class_names": [
+    "Bird-Dropping",
+    "Dusty",
+    "Normal",
+    "Surface-Damage"
+  ],
+  "image_size": [
+    224,
+    224
+  ],
+  "input_color_mode": "RGB",
+  "input_pixel_range": [
+    0,
+    255
+  ],
+  "preprocessing": "Included inside model (MobileNetV2 Rescaling)",
+  "model_type": "MobileNetV2 transfer learning",
+  "training_status": "Initial experimental model"
+}

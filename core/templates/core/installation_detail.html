@@ -1,0 +1,373 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ installation.name }} — SolarGuard{% endblock %}
+
+{% block content %}
+<!-- Header & Navigation -->
+<div class="row mb-4 align-items-center">
+    <div class="col-md-7">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <a href="{% url 'installation_list' %}" class="text-decoration-none text-sg-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Installations
+            </a>
+            <span class="text-muted small">/</span>
+            <span class="text-sg-ink small fw-medium">{{ installation.name }}</span>
+        </div>
+        <h2 class="fw-bold mb-1 text-sg-ink d-flex align-items-center gap-2">
+            <i class="bi bi-building-fill text-emerald"></i>
+            <span>{{ installation.name }}</span>
+            {% if installation.is_layout_verified %}
+                <span class="badge bg-emerald-subtle text-success fs-6 rounded-pill">
+                    <i class="bi bi-patch-check-fill me-1"></i> Verified
+                </span>
+            {% elif active_layout and active_layout.status == 'imported' %}
+                <span class="badge bg-secondary-subtle text-secondary fs-6 rounded-pill" title="Legacy array geometry awaiting on-site physical verification">
+                    <i class="bi bi-box-arrow-in-down me-1"></i> Legacy Imported
+                </span>
+            {% elif active_layout and active_layout.status == 'pending_verification' %}
+                <span class="badge bg-warning-subtle text-warning-emphasis fs-6 rounded-pill">
+                    <i class="bi bi-hourglass-split me-1"></i> Pending Verification
+                </span>
+            {% else %}
+                <span class="badge bg-light text-muted border fs-6 rounded-pill">
+                    <i class="bi bi-pencil me-1"></i> Draft Layout
+                </span>
+            {% endif %}
+        </h2>
+        <p class="text-sg-muted mb-0 small">
+            Site Location: <strong class="text-sg-ink">{{ installation.site_address }}</strong> &bull;
+            Owner: <strong class="text-sg-ink">{{ installation.owner.username }}</strong>
+        </p>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end flex-wrap">
+        <a href="{% url 'report_installation' installation.id %}" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 px-3 py-2">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            <span>Summary Report</span>
+        </a>
+        <a href="{% url 'inspect' %}" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2">
+            <i class="bi bi-camera-fill"></i>
+            <span>Inspect Panel</span>
+        </a>
+        <a href="{% url 'issue_create' %}" class="btn btn-outline-warning d-inline-flex align-items-center gap-2 px-3 py-2">
+            <i class="bi bi-tools"></i>
+            <span>Request Maintenance</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Installation Metadata Card -->
+    <div class="col-lg-8">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-sg-ink mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-emerald"></i>
+                    <span>Installation Specifications</span>
+                </h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-sg-muted small">Installation Type</div>
+                        <div class="fw-bold text-sg-ink">{{ installation.get_installation_type_display }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sg-muted small">Commissioning Date</div>
+                        <div class="fw-bold text-sg-ink">{{ installation.install_date|date:"F d, Y"|default:"Not recorded" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sg-muted small">Total Registered Panels</div>
+                        <div class="fw-bold text-sg-ink">{{ panels.count }} Active Modules</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sg-muted small">Assigned Certified Technician</div>
+                        <div class="fw-bold text-sg-ink">
+                            {% if installation.assigned_technician %}
+                                <span class="badge bg-info-subtle text-info-emphasis px-2 py-1 rounded-pill">
+                                    <i class="bi bi-person-check-fill me-1"></i> {{ installation.assigned_technician.username }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted italic">Unassigned (Awaiting Allocation)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if installation.overview_image %}
+                <div class="mt-4 pt-3 border-top">
+                    <div class="text-sg-muted small mb-2">Site Overview Photograph</div>
+                    <img src="{{ installation.overview_image.url }}" alt="{{ installation.name }}" class="img-fluid rounded-3 border" style="max-height: 220px; object-fit: cover;">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Layout Revision Status Card -->
+    <div class="col-lg-4">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <h5 class="fw-bold text-sg-ink mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-grid-3x3 text-emerald"></i>
+                        <span>Active Layout State</span>
+                    </h5>
+                    {% if active_layout %}
+                        <div class="mb-2">
+                            <span class="text-sg-muted small">Active Version:</span>
+                            <strong class="text-sg-ink">v{{ active_layout.version_number }}</strong>
+                            <span class="badge bg-light text-dark border ms-1">{{ active_layout.get_status_display }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-sg-muted small">Grid Dimensions:</span>
+                            <strong class="text-sg-ink">{{ active_layout.grid_rows }} rows &times; {{ active_layout.grid_cols }} cols</strong>
+                        </div>
+                        {% if draft_revision %}
+                        <div class="mb-2">
+                            <span class="text-sg-muted small">In-Progress Draft:</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis">v{{ draft_revision.version_number }} Draft Editing</span>
+                        </div>
+                        {% endif %}
+                        <div class="mb-3">
+                            <span class="text-sg-muted small">Verification Notes:</span>
+                            <p class="small text-sg-ink mt-1 bg-light p-2 rounded border">
+                                {{ active_layout.review_notes|default:"No notes recorded." }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <p class="text-sg-muted small mb-3">No visual layout revision created yet.</p>
+                    {% endif %}
+                </div>
+
+                <div class="pt-3 border-top d-flex flex-column gap-2">
+                    {% if can_edit_layout %}
+                    <a href="{% url 'layout_builder' installation.id %}" class="btn btn-outline-emerald w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-pencil"></i>
+                        <span>{% if active_layout %}Edit Layout (New Draft){% else %}Create Layout{% endif %}</span>
+                    </a>
+                    {% endif %}
+                    {% if can_verify_layout and target_rev_for_verify %}
+                    <a href="{% url 'layout_verify' target_rev_for_verify.id %}" class="btn btn-warning w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-patch-check"></i>
+                        <span>Review &amp; Verify Layout</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2D Interactive Solar Panel Layout Map -->
+<div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-grid-fill text-emerald"></i>
+                <span>Rooftop Solar Array Health Map</span>
+            </h5>
+            <span class="text-sg-muted small">Interactive 2D spatial arrangement with live inspection status &bull; Click any module to inspect</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if can_edit_layout %}
+            <a href="{% url 'layout_builder' installation.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                <i class="bi bi-pencil me-1"></i> Edit Layout
+            </a>
+            {% endif %}
+            {% if can_verify_layout and target_rev_for_verify %}
+            <a href="{% url 'layout_verify' target_rev_for_verify.id %}" class="btn btn-sm btn-warning rounded-pill px-3">
+                <i class="bi bi-patch-check me-1"></i> Review Layout
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body p-4">
+        {% if grid_matrix %}
+        <div class="rooftop-canvas p-4 rounded-4" style="background-color: #EAEFEA; background-image: radial-gradient(#C8D6CD 1.5px, transparent 1.5px); background-size: 20px 20px; border: 2px solid #D5E0D8; overflow-x: auto;">
+            <div style="display: grid; grid-template-columns: repeat({{ active_layout.grid_cols }}, minmax(130px, 1fr)); gap: 14px; margin: 0 auto; width: fit-content; min-width: 100%; justify-content: center;">
+                {% for row_items in grid_matrix %}
+                    {% for item in row_items %}
+                        {% if not item.is_empty %}
+                            <a href="{% if item.panel_db_id %}{% url 'panel_detail' item.panel_db_id %}{% else %}#{% endif %}" class="text-decoration-none" title="Permanent ID: {{ item.panel_id }} — Click to view Digital Passport">
+                                <div class="panel-tile-detail p-3 rounded-3 d-flex flex-column justify-content-between" style="width: 130px; height: 145px; background: linear-gradient(145deg, #16362F, #1F4D42); border: 2px solid {% if item.is_retired %}#6c757d{% else %}#2B6658{% endif %}; color: #fff; box-shadow: 0 4px 10px rgba(13,61,46,0.15); transition: transform 0.15s ease;">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="badge bg-black bg-opacity-50 rounded-pill" style="font-size: 0.65rem;">R{{ item.row }} C{{ item.col }}</span>
+                                        {% if item.is_retired %}
+                                        <span class="badge bg-secondary rounded-pill" style="font-size: 0.6rem;">Retired</span>
+                                        {% else %}
+                                        <span class="badge {{ item.badge_class }} rounded-pill" style="font-size: 0.6rem;">{{ item.condition }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-center my-auto py-1">
+                                        <div class="fw-bold font-monospace text-truncate" style="font-size: 0.85rem;">{{ item.panel_id }}</div>
+                                        <div class="smaller text-white-50 text-truncate" style="font-size: 0.68rem;">{{ item.serial_number }}</div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between text-white-50 smaller" style="font-size: 0.65rem;">
+                                        <span><i class="bi bi-person-vcard"></i> Passport</span>
+                                        <i class="bi bi-chevron-right"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        {% else %}
+                            <div class="empty-slot-detail rounded-3 d-flex flex-column align-items-center justify-content-center" style="width: 130px; height: 145px; border: 1px dashed rgba(184, 199, 190, 0.4); opacity: 0.35;" title="Empty Array Cell (Row {{ item.row }}, Col {{ item.col }})">
+                                <span class="smaller text-muted" style="font-size: 0.65rem;">R{{ item.row }}, C{{ item.col }}</span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-grid-3x3 text-muted fs-1 mb-2"></i>
+            <h6 class="text-sg-ink fw-bold">No Layout Grid Configured Yet</h6>
+            <p class="text-sg-muted small mb-3">Create a custom layout arrangement for your solar installation to enable the visual health map.</p>
+            {% if can_edit_layout %}
+            <a href="{% url 'layout_builder' installation.id %}" class="btn btn-emerald rounded-pill px-4">
+                <i class="bi bi-plus-circle me-1"></i> Build Panel Layout
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Admin Technician Allocation Card -->
+{% if can_assign_tech and tech_form %}
+<div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+                <h5 class="fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-gear text-emerald"></i>
+                    <span>Technician Assignment Console</span>
+                </h5>
+                <p class="text-sg-muted small mb-0">
+                    Administrator action: Allocate an authorized certified technician to manage on-site inspections and work orders for this array.
+                </p>
+            </div>
+        </div>
+
+        <form method="POST" action="{% url 'installation_assign_tech' installation.id %}" class="row g-3 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-6 col-lg-5">
+                <label for="technicianSelect" class="form-label text-sg-muted small fw-medium">Certified Technician</label>
+                {{ tech_form.technician }}
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-emerald px-4 rounded-pill d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle"></i>
+                    <span>Update Assignment</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Panels in This Installation -->
+<div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-grid-3x3-gap-fill text-emerald"></i>
+                <span>Registered Modules in this Array</span>
+            </h5>
+            <span class="text-sg-muted small">Stable installation-scoped identifiers and grid positions</span>
+        </div>
+        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+            {{ panels.count }} Physical Panels
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 sg-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Permanent ID</th>
+                        <th>OEM Serial Number</th>
+                        <th>Grid Position</th>
+                        <th>Status</th>
+                        <th>Latest Condition</th>
+                        <th>Inspections</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for panel in panels %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold text-sg-ink font-monospace">{{ panel.permanent_id|default:panel.serial_number }}</span>
+                        </td>
+                        <td>
+                            <span class="small text-sg-muted">{{ panel.serial_number }}</span>
+                        </td>
+                        <td>
+                            {% if panel.grid_row and panel.grid_col %}
+                                <span class="badge bg-light text-dark border rounded-pill px-2 py-1 small">
+                                    Row {{ panel.grid_row }}, Col {{ panel.grid_col }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small italic">Unplaced</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if panel.status == 'active' %}
+                                <span class="badge bg-emerald-subtle text-success px-2 py-1 rounded-pill small">Active</span>
+                            {% elif panel.status == 'retired' %}
+                                <span class="badge bg-secondary px-2 py-1 rounded-pill small">Retired</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border px-2 py-1 rounded-pill small">Empty Slot</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if panel.latest_inspection %}
+                                {% if panel.latest_inspection.predicted_class == 'Normal' %}
+                                    <span class="badge bg-emerald-subtle text-success px-2 py-1 rounded-pill small">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Normal
+                                    </span>
+                                {% elif 'damage' in panel.latest_inspection.predicted_class|lower or 'crack' in panel.latest_inspection.predicted_class|lower %}
+                                    <span class="badge bg-danger px-2 py-1 rounded-pill small">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ panel.latest_inspection.predicted_class }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark px-2 py-1 rounded-pill small">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i> {{ panel.latest_inspection.predicted_class }}
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-light text-muted border px-2 py-1 rounded-pill small">Not Inspected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="small text-sg-ink">{{ panel.inspections.count }} inspection(s)</span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-inline-flex gap-2">
+                                <a href="{% url 'panel_detail' panel.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3" title="View Digital Passport">
+                                    <i class="bi bi-person-vcard me-1"></i> Passport
+                                </a>
+                                {% if panel.status == 'retired' %}
+                                <button class="btn btn-sm btn-secondary rounded-pill px-3" disabled title="Retired panels cannot be inspected">
+                                    <i class="bi bi-slash-circle me-1"></i> Retired
+                                </button>
+                                {% else %}
+                                <a href="{% url 'inspect' %}?panel_id={{ panel.id }}" class="btn btn-sm btn-emerald rounded-pill px-3" title="Inspect this panel">
+                                    <i class="bi bi-camera me-1"></i> Inspect
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-sg-muted">
+                            No individual panels registered for this installation yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

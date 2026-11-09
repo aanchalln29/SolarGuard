@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SolarGuard — AI-Assisted Solar Fleet Inspection & Maintenance{% endblock %}</title>
+    <!-- Google Fonts Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom CSS with Brand Design Tokens -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block navbar %}
+    <!-- SolarGuard Emerald & Solar Gold Navigation Bar -->
+    <header class="sg-navbar-wrapper">
+        <div class="container-fluid px-lg-4">
+            <nav class="navbar navbar-expand-lg p-0">
+                <div class="container-fluid p-0">
+                    <!-- Brand Logo -->
+                    <a class="sg-brand" href="{% url 'dashboard' %}">
+                        <div class="sg-sun-badge">
+                            <i class="bi bi-sun-fill"></i>
+                        </div>
+                        <div>
+                            <div class="sg-brand-title">Solar<span>Guard</span></div>
+                            <div class="sg-brand-tagline">Solar Asset Health &amp; Maintenance</div>
+                        </div>
+                    </a>
+
+                    <button class="navbar-toggler border-0 text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                        <i class="bi bi-list fs-2 text-white"></i>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarMain">
+                        {% if user.is_authenticated %}
+                        <!-- Center Segmented Pill Navigation -->
+                        <div class="mx-auto my-2 my-lg-0">
+                            <div class="sg-nav-pills">
+                                {% if is_customer_user %}
+                                    <a class="sg-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                                        <i class="bi bi-grid-fill"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'installation' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'installation_list' %}">
+                                        <i class="bi bi-building"></i>
+                                        <span>My Installations</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'inspection' in request.resolver_match.url_name or request.resolver_match.url_name == 'inspect' %}active{% endif %}" href="{% url 'inspection_list' %}">
+                                        <i class="bi bi-camera-fill"></i>
+                                        <span>Inspections</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'issue' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'issue_list' %}">
+                                        <i class="bi bi-tools"></i>
+                                        <span>Maintenance</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'reports_index' %}">
+                                        <i class="bi bi-file-earmark-bar-graph"></i>
+                                        <span>Reports</span>
+                                    </a>
+
+                                {% elif is_technician_user %}
+                                    <a class="sg-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                                        <i class="bi bi-briefcase-fill"></i>
+                                        <span>Assigned Work</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'installation' in request.resolver_match.url_name or 'layout' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'installation_list' %}">
+                                        <i class="bi bi-grid-3x3"></i>
+                                        <span>Layout Reviews</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if request.GET.review_status == 'ai_predicted' %}active{% endif %}" href="{% url 'inspection_list' %}?review_status=ai_predicted">
+                                        <i class="bi bi-check2-square"></i>
+                                        <span>Inspection Reviews</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'issue' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'issue_list' %}">
+                                        <i class="bi bi-tools"></i>
+                                        <span>Maintenance</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'reports_index' %}">
+                                        <i class="bi bi-file-earmark-bar-graph"></i>
+                                        <span>Reports</span>
+                                    </a>
+
+                                {% else %}
+                                    <!-- Administrator Navigation -->
+                                    <a class="sg-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                                        <i class="bi bi-speedometer2"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'installation' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'installation_list' %}">
+                                        <i class="bi bi-building"></i>
+                                        <span>Installations</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if request.GET.status == 'unassigned' %}active{% endif %}" href="{% url 'issue_list' %}?status=unassigned">
+                                        <i class="bi bi-person-check"></i>
+                                        <span>Assignments</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if request.GET.review_status == 'ai_predicted' %}active{% endif %}" href="{% url 'inspection_list' %}?review_status=ai_predicted">
+                                        <i class="bi bi-hourglass-split"></i>
+                                        <span>Pending Reviews</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'issue' in request.resolver_match.url_name and request.GET.status != 'unassigned' %}active{% endif %}" href="{% url 'issue_list' %}">
+                                        <i class="bi bi-tools"></i>
+                                        <span>Maintenance</span>
+                                    </a>
+                                    <a class="sg-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'reports_index' %}">
+                                        <i class="bi bi-file-earmark-bar-graph"></i>
+                                        <span>Reports</span>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Right Controls: Settings, Bell, Avatar -->
+                        <div class="sg-header-actions justify-content-end">
+                            <a href="{% url 'reports_index' %}" class="sg-icon-btn" title="Reports Hub">
+                                <i class="bi bi-file-earmark-bar-graph"></i>
+                            </a>
+                            <!-- In-App Notification Center Dropdown -->
+                            <div class="dropdown">
+                                <button type="button" class="sg-icon-btn dropdown-toggle dropdown-toggle-nocaret border-0" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                                    <i class="bi bi-bell-fill"></i>
+                                    {% if unread_notifications_count > 0 %}
+                                    <span class="sg-badge-counter">{{ unread_notifications_count }}</span>
+                                    {% endif %}
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-0 overflow-hidden" style="width: 350px; max-width: 90vw;" aria-labelledby="notificationDropdown">
+                                    <!-- Dropdown Header -->
+                                    <div class="px-3 py-2 bg-light border-bottom d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-sg-ink small">Notifications</span>
+                                            {% if unread_notifications_count > 0 %}
+                                            <span class="badge bg-danger rounded-pill smaller">{{ unread_notifications_count }} unread</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if unread_notifications_count > 0 %}
+                                        <a href="{% url 'notification_mark_all_read' %}" class="smaller text-decoration-none text-emerald fw-semibold">
+                                            Mark all read
+                                        </a>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Notifications List -->
+                                    <div class="list-group list-group-flush" style="max-height: 380px; overflow-y: auto;">
+                                        {% if recent_notifications %}
+                                            {% for notif in recent_notifications %}
+                                            <a href="{% url 'notification_open' notif.id %}" class="list-group-item list-group-item-action px-3 py-2 border-bottom text-decoration-none {% if not notif.is_read %}bg-light bg-opacity-75{% endif %}">
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <div class="mt-1">
+                                                        {% if not notif.is_read %}
+                                                        <span class="d-inline-block rounded-circle bg-emerald" style="width: 8px; height: 8px;" title="Unread"></span>
+                                                        {% else %}
+                                                        <span class="d-inline-block rounded-circle bg-secondary bg-opacity-25" style="width: 8px; height: 8px;" title="Read"></span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="flex-grow-1 min-w-0">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <strong class="text-dark small text-truncate d-block" style="max-width: 210px;">{{ notif.title }}</strong>
+                                                            <span class="text-muted smaller font-monospace">{{ notif.created_at|timesince }} ago</span>
+                                                        </div>
+                                                        <p class="text-secondary smaller mb-0 text-truncate" style="max-width: 270px;">{{ notif.message }}</p>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                            {% endfor %}
+                                        {% else %}
+                                            <!-- Sensible Empty State -->
+                                            <div class="p-4 text-center text-muted">
+                                                <i class="bi bi-bell-slash fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                                <div class="small fw-semibold text-dark">No notifications yet</div>
+                                                <div class="smaller text-muted">You're all caught up with your solar alerts.</div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Dropdown Footer -->
+                                    <div class="p-2 bg-light border-top text-center">
+                                        <a href="{% url 'notification_list' %}" class="small text-emerald fw-semibold text-decoration-none">
+                                            View all notifications &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="dropdown">
+                                <div class="sg-avatar-pill dropdown-toggle d-flex align-items-center gap-2" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="{{ user.username }}">
+                                    <span>{{ user.username|slice:":1"|upper|default:"A" }}</span>
+                                </div>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2" aria-labelledby="userDropdown">
+                                    <li>
+                                        <div class="px-3 py-2 border-bottom">
+                                            <div class="fw-bold text-dark">{{ user.username }}</div>
+                                            <div class="mt-1">
+                                                {% if is_admin_user %}
+                                                <span class="badge bg-emerald-subtle text-success px-2 py-1 rounded-pill small"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>
+                                                {% elif is_technician_user %}
+                                                <span class="badge bg-warning-subtle text-warning-emphasis px-2 py-1 rounded-pill small"><i class="bi bi-wrench-adjustable me-1"></i> Certified Technician</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small"><i class="bi bi-person-fill me-1"></i> Customer Account</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li><a class="dropdown-item rounded-3 py-2 mt-1" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-2 text-success"></i> Dashboard</a></li>
+                                    <li><a class="dropdown-item rounded-3 py-2" href="{% url 'installation_list' %}"><i class="bi bi-building me-2 text-primary"></i> Solar Installations</a></li>
+                                    <li><a class="dropdown-item rounded-3 py-2" href="{% url 'inspection_list' %}"><i class="bi bi-camera me-2 text-emerald"></i> Inspection History</a></li>
+                                    <li><a class="dropdown-item rounded-3 py-2" href="{% url 'issue_list' %}"><i class="bi bi-tools me-2 text-warning"></i> Maintenance Queue</a></li>
+                                    <li><a class="dropdown-item rounded-3 py-2" href="{% url 'reports_index' %}"><i class="bi bi-file-earmark-bar-graph me-2 text-info"></i> Reports Hub</a></li>
+                                    {% if is_admin_user %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item rounded-3 py-2" href="/admin/" target="_blank"><i class="bi bi-gear-fill me-2 text-secondary"></i> Django Admin Console</a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item rounded-3 py-2 text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Sign Out</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <a class="sg-nav-link active" href="{% url 'login' %}">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                <span>Sign In</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+    {% endblock navbar %}
+
+    <!-- Main Content Container -->
+    <main class="{% block main_class %}py-4{% endblock %}">
+        {% block main_container %}
+        <div class="container-fluid px-lg-4">
+
+            <!-- System Messages / Alerts -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm rounded-4 border-0 mb-4" role="alert">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill me-2 text-success"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="bi bi-x-circle-fill me-2 text-danger"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill me-2 text-info"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+        {% endblock main_container %}
+    </main>
+
+    {% block footer %}
+    <!-- Clean Brand Footer -->
+    <footer class="bg-white border-top py-3 mt-auto text-muted small">
+        <div class="container-fluid px-lg-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <strong style="color: var(--sg-primary-dark);">SolarGuard</strong> &bull; Solar Asset Health &amp; Maintenance Platform
+            </div>
+            <div class="text-secondary small">
+                &copy; 2026 SolarGuard Systems &bull; Operational Fleet Integrity
+            </div>
+        </div>
+    </footer>
+    {% endblock footer %}
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

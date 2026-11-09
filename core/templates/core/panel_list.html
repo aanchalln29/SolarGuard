@@ -1,0 +1,203 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Solar Panels Inventory — SolarGuard{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1 text-sg-ink">Solar Panels &amp; Array Inventory</h1>
+        <p class="text-sg-muted small mb-0">Manage registered solar installations, operating parameters, and inspection histories.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'panel_add' %}" class="btn-sg-primary shadow-xs">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span>Register New Panel</span>
+        </a>
+    </div>
+</div>
+
+<!-- Panels Table Card -->
+<div class="sg-card">
+    <div class="sg-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h5 class="sg-card-title mb-0">
+                <i class="bi bi-grid-3x3-gap-fill text-success"></i> Monitored Fleet Arrays
+            </h5>
+            <span class="badge bg-light text-secondary border rounded-pill">{{ panels|length }} registered</span>
+            
+            <!-- Quick Filter Chips -->
+            <div class="sg-filter-chips ms-2">
+                <button type="button" class="sg-filter-chip active" id="chipAll" onclick="setPanelFilter('all')">All</button>
+                <button type="button" class="sg-filter-chip" id="chipAttention" onclick="setPanelFilter('attention')">
+                    <i class="bi bi-exclamation-circle text-warning"></i> Needs Triage
+                </button>
+                <button type="button" class="sg-filter-chip" id="chipNominal" onclick="setPanelFilter('nominal')">
+                    <i class="bi bi-shield-check text-success"></i> Nominal
+                </button>
+            </div>
+        </div>
+        
+        <!-- Live Quick Search -->
+        <div style="min-width: 220px;">
+            <input type="text" id="panelSearchInput" class="form-control form-control-sm rounded-pill" placeholder="Filter by serial or site..." onkeyup="filterPanelsTable()">
+        </div>
+    </div>
+    <div class="sg-card-body p-0">
+        {% if panels %}
+        <div class="table-responsive">
+            <table class="sg-table" id="panelsTable">
+                <thead>
+                    <tr>
+                        <th>Serial Number</th>
+                        <th>Location / Array Zone</th>
+                        <th>Installed</th>
+                        <th>Age</th>
+                        <th>Last Cleaned</th>
+                        <th>Open Issues</th>
+                        <th>Latest Condition</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for panel in panels %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'panel_detail' panel.id %}" class="text-decoration-none text-sg-ink fw-bold">
+                                {{ panel.permanent_id|default:panel.serial_number }}
+                            </a>
+                            {% if panel.permanent_id and panel.serial_number %}
+                            <div class="text-muted smaller font-monospace">{{ panel.serial_number }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-sg-muted small">{{ panel.site_location }}</td>
+                        <td class="text-sg-muted small">
+                            {% if panel.install_date %}
+                                {{ panel.install_date|date:"M Y" }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-sg-muted small">
+                            {% if panel.panel_age_months is not None %}
+                                {{ panel.panel_age_months }} mo.
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if panel.last_cleaned_date %}
+                                <span class="small {% if panel.days_since_last_cleaning > 60 %}text-warning fw-semibold{% else %}text-secondary{% endif %}">
+                                    {{ panel.last_cleaned_date|date:"M d, Y" }}
+                                </span>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    ({{ panel.days_since_last_cleaning }} days ago)
+                                </div>
+                            {% else %}
+                                <span class="text-muted small">Not recorded</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if panel.open_issues_count > 0 %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-1 small fw-semibold">
+                                {{ panel.open_issues_count }} open
+                            </span>
+                            {% else %}
+                            <span class="text-muted small">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if panel.latest_inspection %}
+                            <span class="badge 
+                                {% if 'crack' in panel.latest_inspection.predicted_class|lower or 'damage' in panel.latest_inspection.predicted_class|lower %}badge-fault-cracked
+                                {% elif 'bird' in panel.latest_inspection.predicted_class|lower %}badge-fault-bird
+                                {% elif 'dust' in panel.latest_inspection.predicted_class|lower %}badge-fault-dusty
+                                {% elif 'unable' in panel.latest_inspection.predicted_class|lower %}badge-fault-unable
+                                {% else %}badge-fault-normal{% endif %}">
+                                {{ panel.latest_inspection.predicted_class }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted small">Not inspected yet</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{% url 'panel_detail' panel.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-2" title="View Digital Passport">
+                                    <i class="bi bi-person-vcard"></i> Passport
+                                </a>
+                                {% if panel.status == 'retired' %}
+                                <button class="btn btn-sm btn-secondary rounded-pill px-2 opacity-75" disabled title="Retired panels cannot be inspected">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                                {% else %}
+                                <a href="{% url 'inspect' %}?panel_id={{ panel.id }}" class="btn btn-sm btn-emerald rounded-pill px-3" title="Inspect this panel">
+                                    <i class="bi bi-camera"></i> Inspect
+                                </a>
+                                {% endif %}
+                                {% if panel.latest_inspection %}
+                                <a href="{% url 'result_detail' panel.latest_inspection.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="View latest result">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-grid-3x3 text-secondary fs-1 d-block mb-3"></i>
+            <h5 class="fw-bold text-sg-ink">No solar panels registered yet</h5>
+            <p class="text-sg-muted">Register your solar array installations to begin automated AI visual defect screening.</p>
+            <a href="{% url 'panel_add' %}" class="btn-sg-primary mt-2">
+                <i class="bi bi-plus-circle me-1"></i> Add Your First Solar Panel
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentFilter = 'all';
+
+function setPanelFilter(filterType) {
+    currentFilter = filterType;
+    document.querySelectorAll('.sg-filter-chip').forEach(btn => btn.classList.remove('active'));
+    if (filterType === 'all') document.getElementById('chipAll')?.classList.add('active');
+    if (filterType === 'attention') document.getElementById('chipAttention')?.classList.add('active');
+    if (filterType === 'nominal') document.getElementById('chipNominal')?.classList.add('active');
+    applyCombinedFilters();
+}
+
+function filterPanelsTable() {
+    applyCombinedFilters();
+}
+
+function applyCombinedFilters() {
+    const input = document.getElementById('panelSearchInput');
+    const searchVal = input ? input.value.toLowerCase().trim() : '';
+    const table = document.getElementById('panelsTable');
+    if (!table) return;
+    const trs = table.querySelectorAll('tbody tr');
+
+    trs.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const matchesSearch = !searchVal || text.includes(searchVal);
+        
+        let matchesChip = true;
+        if (currentFilter === 'attention') {
+            matchesChip = text.includes('crack') || text.includes('damage') || text.includes('bird') || 
+                          text.includes('dust') || text.includes('unable') || text.includes('open');
+        } else if (currentFilter === 'nominal') {
+            matchesChip = text.includes('normal') && !text.includes('open');
+        }
+
+        row.style.display = (matchesSearch && matchesChip) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

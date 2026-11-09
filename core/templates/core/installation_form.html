@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Add Solar Installation — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="mb-4">
+            <a href="{% url 'installation_list' %}" class="text-decoration-none text-sg-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Back to Installations
+            </a>
+            <h2 class="fw-bold text-sg-ink mt-2 mb-1">
+                <i class="bi bi-plus-circle text-emerald me-2"></i>Register Solar Installation
+            </h2>
+            <p class="text-sg-muted small mb-0">
+                Register a new residential or commercial solar array installation. In the next step, you can build your visual panel layout.
+            </p>
+        </div>
+
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger rounded-3 mb-4">
+                        <strong class="d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Please correct the errors below:</strong>
+                        <ul class="mb-0 ps-3">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Installation Name -->
+                    <div class="mb-4">
+                        <label for="installationNameInput" class="form-label text-sg-ink fw-semibold">
+                            Installation / Site Name <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        <div class="form-text small text-sg-muted">A clear, descriptive name for your solar system (e.g., "West Roof Solar Array" or "Main Residence Rooftop").</div>
+                    </div>
+
+                    <!-- Site Address / Location -->
+                    <div class="mb-4">
+                        <label for="installationAddressInput" class="form-label text-sg-ink fw-semibold">
+                            Site Address / Location <span class="text-danger">*</span>
+                        </label>
+                        {{ form.site_address }}
+                        <div class="form-text small text-sg-muted">The physical address or building location of the array.</div>
+                    </div>
+
+                    <!-- Array Type & Commissioning Date -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="installationTypeSelect" class="form-label text-sg-ink fw-semibold">Installation Type</label>
+                            {{ form.installation_type }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="installationDateInput" class="form-label text-sg-ink fw-semibold">Commissioning Date (Optional)</label>
+                            {{ form.install_date }}
+                        </div>
+                    </div>
+
+                    <!-- Overview Photograph -->
+                    <div class="mb-4">
+                        <label for="installationOverviewInput" class="form-label text-sg-ink fw-semibold">Site Overview Photo (Optional)</label>
+                        {{ form.overview_image }}
+                        <div class="form-text small text-sg-muted">A wide photograph showing the solar installation or roof area. (Individual panel inspection photos will be uploaded separately).</div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end pt-3 border-top">
+                        <a href="{% url 'installation_list' %}" class="btn btn-outline-secondary px-4 rounded-pill">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-5 rounded-pill d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Save & Continue</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

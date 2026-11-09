@@ -1,0 +1,106 @@
+{
+    "model_version": "3.1",
+    "model_name": "MobileNetV2 CNN v3.1 (Class-Weighted)",
+    "architecture": "MobileNetV2",
+    "model_file": "solarguard_model_v3_1.keras",
+    "sha256_hash": "D5D27E9FF82B007DAD680DB788DC4652CCF53EE7AAF0FB5CBBD72A327F2E22A5",
+    "class_names": [
+        "Bird-Dropping",
+        "Dusty",
+        "Normal",
+        "Surface-Damage"
+    ],
+    "image_size": [
+        224,
+        224
+    ],
+    "input_color_mode": "RGB",
+    "input_pixel_range": [
+        0,
+        255
+    ],
+    "input_shape": [
+        1,
+        224,
+        224,
+        3
+    ],
+    "preprocessing": "Built into model: Rescaling(1/127.5, offset=-1); PIL ImageOps.exif_transpose",
+    "decision_rule": "argmax",
+    "bird_dropping_threshold": null,
+    "confidence_review_threshold": 60.0,
+    "training_configuration": {
+        "loss": "Sparse Categorical Cross-Entropy with inverse-frequency class weighting",
+        "class_weights": {
+            "Bird-Dropping": 4.851,
+            "Dusty": 0.816,
+            "Normal": 0.435,
+            "Surface-Damage": 3.727
+        },
+        "optimizer": "Adam (learning_rate=3e-4)",
+        "dropout_rate": 0.35,
+        "batch_size": 32,
+        "backbone_trainable": false
+    },
+    "verified_metrics": {
+        "frozen_test_benchmark": {
+            "test_images": 485,
+            "accuracy": 0.909278,
+            "macro_f1": 0.8179,
+            "per_class": {
+                "Bird-Dropping": {
+                    "precision": 0.5862,
+                    "recall": 0.6800,
+                    "f1": 0.6300,
+                    "tp": 17,
+                    "fp": 12,
+                    "fn": 8,
+                    "support": 25
+                },
+                "Dusty": {
+                    "precision": 0.9286,
+                    "recall": 0.8725,
+                    "f1": 0.8997,
+                    "tp": 130,
+                    "fp": 10,
+                    "fn": 19,
+                    "support": 149
+                },
+                "Normal": {
+                    "precision": 0.9636,
+                    "recall": 0.9532,
+                    "f1": 0.9584,
+                    "tp": 265,
+                    "fp": 10,
+                    "fn": 13,
+                    "support": 278
+                },
+                "Surface-Damage": {
+                    "precision": 0.7073,
+                    "recall": 0.8788,
+                    "f1": 0.7838,
+                    "tp": 29,
+                    "fp": 12,
+                    "fn": 4,
+                    "support": 33,
+                    "false_negatives_as_normal": 0,
+                    "false_negatives_as_dusty": 0,
+                    "false_negatives_as_bird_dropping": 4
+                }
+            }
+        },
+        "validation_benchmark": {
+            "val_images": 482,
+            "accuracy": 0.9025,
+            "macro_f1": 0.8200,
+            "surface_damage_recall": 0.9375
+        }
+    },
+    "evaluation_limitations": [
+        "Softmax confidence scores are uncalibrated and do not represent certified probabilities.",
+        "Demonstration sample images (media/sample_test_images) exhibit strong domain shifts and should not be used for safety certification.",
+        "Minority classes (Bird-Dropping: 25 test samples, Surface-Damage: 33 test samples) have inherent sample uncertainty; individual classification errors shift per-class metrics by 3-4 percentage points.",
+        "Visual photographic inspection cannot detect internal cell micro-cracks without electroluminescence (EL) imaging, nor can it certify electrical inverter/string integrity.",
+        "All predictions with confidence < 60.0% or contested top margins (< 15%) must be routed to certified technicians for on-site inspection."
+    ]
+}

@@ -1,0 +1,151 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Sign In — SolarGuard AI Monitoring{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block main_class %}p-0 m-0{% endblock %}
+
+{% block main_container %}
+<div class="login-split-page">
+    <!-- Left Hero Side (Clean SolarGuard Brand Identity) -->
+    <div class="login-hero-side">
+        <!-- Top SolarGuard Brand -->
+        <div class="login-hero-brand">
+            <div class="d-flex align-items-center gap-2">
+                <div class="sg-sun-badge">
+                    <i class="bi bi-sun-fill"></i>
+                </div>
+                <div>
+                    <div class="fw-bold fs-4 text-white" style="letter-spacing: -0.5px; line-height: 1.1;">
+                        Solar<span>Guard</span>
+                    </div>
+                    <div class="small fw-medium" style="color: rgba(255, 255, 255, 0.85); font-size: 0.78rem;">
+                        Solar Asset Health &amp; Maintenance
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Headline & Copy -->
+        <div class="my-auto py-5">
+            <h1 class="login-hero-headline text-white">
+                Visible defect triage.<br>
+                Actionable maintenance.<br>
+                <span>Zero guesswork.</span>
+            </h1>
+            <div class="login-accent-line"></div>
+            <p class="login-hero-para text-white">
+                SolarGuard provides optical surface condition screening and prioritized maintenance triage to maintain peak solar array health and energy uptime.
+            </p>
+        </div>
+
+        <!-- Bottom Trust Features -->
+        <div class="text-white text-opacity-75 small d-flex align-items-center gap-3 flex-wrap">
+            <span class="d-flex align-items-center gap-1"><i class="bi bi-shield-check text-emerald"></i> Verified Hardware Records</span>
+            <span class="d-flex align-items-center gap-1"><i class="bi bi-clock-history text-emerald"></i> Full Maintenance History</span>
+        </div>
+    </div>
+
+    <!-- Right Login Card Side (Clean Elevated Card) -->
+    <div class="login-form-side">
+        <div class="login-elevated-card">
+            <div class="text-center mb-4">
+                <div class="sg-sun-badge mx-auto mb-3" style="width: 48px; height: 48px; font-size: 1.6rem;">
+                    <i class="bi bi-sun-fill"></i>
+                </div>
+                <h2 class="fw-bold text-sg-ink mb-1" style="font-size: 1.75rem; letter-spacing: -0.5px;">Welcome to SolarGuard</h2>
+                <p class="text-sg-muted small mb-0">Sign in to access your solar fleet dashboard</p>
+            </div>
+
+            <!-- Django Authentication Error Alert -->
+            {% if form.errors or messages %}
+                <div class="alert alert-danger rounded-4 py-2 px-3 small mb-3 border-0 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    {% if form.non_field_errors %}
+                        {{ form.non_field_errors|striptags }}
+                    {% else %}
+                        Invalid username or password. Please try again.
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+
+                <!-- Username / Email Input -->
+                <div class="mb-3">
+                    <label for="id_username" class="form-label small fw-semibold text-sg-ink ps-1 mb-1">Username or Operator ID</label>
+                    <div class="login-input-pill">
+                        <i class="bi bi-person text-muted me-2 fs-5"></i>
+                        <input type="text" 
+                               name="username" 
+                               id="id_username" 
+                               value="{{ form.username.value|default:'' }}"
+                               placeholder="e.g. admin or operator1" 
+                               required 
+                               autofocus>
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="mb-4">
+                    <label for="id_password" class="form-label small fw-semibold text-sg-ink ps-1 mb-1">Password</label>
+                    <div class="login-input-pill">
+                        <i class="bi bi-lock text-muted me-2 fs-5"></i>
+                        <input type="password" 
+                               name="password" 
+                               id="id_password" 
+                               placeholder="Enter your password" 
+                               required>
+                        <button type="button" 
+                                class="btn btn-link p-0 text-muted ms-auto text-decoration-none shadow-none" 
+                                id="togglePasswordBtn" 
+                                title="Show/Hide Password"
+                                aria-label="Toggle password visibility">
+                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-signin w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Sign In to Dashboard</span>
+                </button>
+            </form>
+
+            <div class="mt-4 pt-3 border-top text-center">
+                <span class="text-sg-muted small">
+                    <i class="bi bi-shield-lock me-1"></i> Authorized SolarGuard access only. Contact your system administrator for account credentials.
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_container %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('togglePasswordBtn');
+    const pwdInput = document.getElementById('id_password');
+    const pwdIcon = document.getElementById('togglePasswordIcon');
+
+    if (toggleBtn && pwdInput && pwdIcon) {
+        toggleBtn.addEventListener('click', function () {
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                pwdIcon.classList.remove('bi-eye');
+                pwdIcon.classList.add('bi-eye-slash');
+            } else {
+                pwdInput.type = 'password';
+                pwdIcon.classList.remove('bi-eye-slash');
+                pwdIcon.classList.add('bi-eye');
+            }
+        });
+    }
+});
+</script>
+{% endblock extra_js %}

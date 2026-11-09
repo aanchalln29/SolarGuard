@@ -1,0 +1,219 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Maintenance Issues &amp; Work Orders — SolarGuard{% endblock %}
+
+{% block content %}
+<!-- Top Header & Actions -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="h3 fw-bold mb-1 text-sg-ink d-flex align-items-center gap-2">
+            <i class="bi bi-tools text-emerald"></i>
+            <span>
+                {% if is_customer %}My Maintenance Requests
+                {% elif is_technician %}My Assigned Work Orders
+                {% else %}Maintenance Management Console
+                {% endif %}
+            </span>
+        </h1>
+        <p class="text-sg-muted small mb-0">
+            {% if is_customer %}Track cleaning requests, inspections, and repair orders.
+            {% elif is_technician %}Field service work orders assigned to your schedule.
+            {% else %}Manage maintenance requests, assign technicians, and track work order progress.
+            {% endif %}
+        </p>
+    </div>
+    {% if is_customer or is_admin %}
+    <a href="{% url 'issue_create' %}" class="btn btn-emerald rounded-pill px-4 shadow-xs">
+        <i class="bi bi-plus-circle me-1"></i>
+        <span>New Request</span>
+    </a>
+    {% endif %}
+</div>
+
+<!-- Status Filter Chips -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div class="sg-filter-chips d-flex align-items-center flex-wrap gap-2">
+        <a class="sg-filter-chip {% if status_filter == 'all' %}active{% endif %}" href="{% url 'issue_list' %}">
+            All Work Orders <span class="badge bg-secondary ms-1">{{ counts.all }}</span>
+        </a>
+        {% if is_admin and counts.unassigned > 0 %}
+        <a class="sg-filter-chip {% if status_filter == 'unassigned' %}active{% endif %}" href="{% url 'issue_list' %}?status=unassigned" style="border-color: #E63946;">
+            <i class="bi bi-person-x text-danger"></i> Unassigned <span class="badge bg-danger ms-1">{{ counts.unassigned }}</span>
+        </a>
+        {% endif %}
+        <a class="sg-filter-chip {% if status_filter == 'Open' %}active{% endif %}" href="{% url 'issue_list' %}?status=Open">
+            <i class="bi bi-exclamation-circle text-danger"></i> Open <span class="badge bg-danger ms-1">{{ counts.open }}</span>
+        </a>
+        <a class="sg-filter-chip {% if status_filter == 'Assigned' %}active{% endif %}" href="{% url 'issue_list' %}?status=Assigned">
+            <i class="bi bi-person-check text-primary"></i> Assigned <span class="badge bg-primary ms-1">{{ counts.assigned }}</span>
+        </a>
+        <a class="sg-filter-chip {% if status_filter == 'In Progress' %}active{% endif %}" href="{% url 'issue_list' %}?status=In Progress">
+            <i class="bi bi-hourglass-split text-warning"></i> In Progress <span class="badge bg-warning text-dark ms-1">{{ counts.in_progress }}</span>
+        </a>
+        <a class="sg-filter-chip {% if status_filter == 'Resolved' %}active{% endif %}" href="{% url 'issue_list' %}?status=Resolved">
+            <i class="bi bi-check2-circle text-success"></i> Resolved <span class="badge bg-success ms-1">{{ counts.resolved }}</span>
+        </a>
+        <a class="sg-filter-chip {% if status_filter == 'Closed' %}active{% endif %}" href="{% url 'issue_list' %}?status=Closed">
+            <i class="bi bi-archive text-secondary"></i> Closed <span class="badge bg-secondary ms-1">{{ counts.closed }}</span>
+        </a>
+    </div>
+
+    <!-- Quick Search -->
+    <div style="min-width: 220px;">
+        <input type="text" id="issueSearchInput" class="form-control form-control-sm rounded-pill" placeholder="Search work orders..." onkeyup="filterIssuesTable()">
+    </div>
+</div>
+
+<!-- Main Table Card -->
+<div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-list-task text-emerald"></i>
+                <span>Work Orders</span>
+            </h5>
+            <span class="text-sg-muted small">Showing {{ issues|length }} work order{{ issues|length|pluralize }}</span>
+        </div>
+        {% if is_admin and installations_list %}
+        <!-- Admin Quick Filters -->
+        <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+            {% if status_filter != 'all' %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            <select name="installation" class="form-select form-select-sm rounded-pill w-auto" onchange="this.form.submit()">
+                <option value="all">-- All Installations --</option>
+                {% for inst in installations_list %}
+                <option value="{{ inst.id }}" {% if installation_filter == inst.id|stringformat:"s" %}selected{% endif %}>{{ inst.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="priority" class="form-select form-select-sm rounded-pill w-auto" onchange="this.form.submit()">
+                <option value="all">-- All Priorities --</option>
+                <option value="High" {% if priority_filter == 'High' %}selected{% endif %}>High Priority</option>
+                <option value="Medium" {% if priority_filter == 'Medium' %}selected{% endif %}>Medium Priority</option>
+                <option value="Low" {% if priority_filter == 'Low' %}selected{% endif %}>Low Priority</option>
+            </select>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card-body p-0">
+        {% if issues %}
+        <div class="table-responsive">
+            <table class="sg-table align-middle" id="issuesTable">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Status</th>
+                        <th>Title</th>
+                        <th>Panel</th>
+                        <th>Installation</th>
+                        <th>Assigned To</th>
+                        <th>Priority</th>
+                        <th>Opened</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-secondary border font-monospace">#{{ issue.id }}</span>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill px-2 py-1 small fw-semibold
+                                {% if issue.status == 'Open' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                                {% elif issue.status == 'Assigned' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                                {% elif issue.status == 'In Progress' %}bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25
+                                {% elif issue.status == 'Resolved' %}bg-success bg-opacity-10 text-success border border-success border-opacity-25
+                                {% elif issue.status == 'Closed' %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25
+                                {% else %}bg-secondary text-white{% endif %}">
+                                {{ issue.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'issue_detail' issue.id %}" class="fw-bold text-decoration-none text-sg-ink">
+                                {{ issue.title }}
+                            </a>
+                            {% if issue.supporting_photo %}
+                            <span class="badge bg-light text-secondary border rounded-pill ms-1 smaller" title="Includes supporting photograph">
+                                <i class="bi bi-image"></i> Photo
+                            </span>
+                            {% endif %}
+                            {% if issue.payment_status == 'paid' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1 smaller" title="Service fee paid (Test Mode)">
+                                <i class="bi bi-patch-check-fill me-1"></i>Paid
+                            </span>
+                            {% elif issue.payment_status == 'pending' %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill ms-1 smaller" title="Service fee pending payment">
+                                ₹{{ issue.service_fee|floatformat:0 }} Due
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'panel_detail' issue.panel.id %}" class="font-monospace text-decoration-none text-dark fw-bold">
+                                {{ issue.panel.permanent_id|default:issue.panel.serial_number }}
+                            </a>
+                        </td>
+                        <td class="text-sg-muted small">
+                            {{ issue.installation.name|default:"Home System" }}
+                        </td>
+                        <td>
+                            {% if issue.assigned_technician %}
+                            <span class="badge bg-light text-dark border rounded-pill small">
+                                <i class="bi bi-person-fill text-emerald me-1"></i> {{ issue.assigned_technician.username }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill small">
+                                <i class="bi bi-clock me-1"></i> Unassigned
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="fw-bold {% if issue.priority == 'High' %}text-danger{% elif issue.priority == 'Medium' %}text-warning{% else %}text-success{% endif %}">
+                                {{ issue.priority }}
+                            </span>
+                        </td>
+                        <td class="text-sg-muted small">{{ issue.created_at|date:"M d, Y" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1">
+                                {% if is_customer %}View Details &rarr;
+                                {% elif is_technician %}Update Work &rarr;
+                                {% else %}Manage &rarr;
+                                {% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-tools text-secondary fs-1 d-block mb-3"></i>
+            <h5 class="fw-bold text-sg-ink">No maintenance work orders found</h5>
+            <p class="text-sg-muted mb-3">There are no work orders matching your current filter criteria.</p>
+            {% if is_customer or is_admin %}
+            <a href="{% url 'issue_create' %}" class="btn btn-emerald btn-sm rounded-pill px-3">
+                <i class="bi bi-plus-circle me-1"></i> Log Maintenance Request
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterIssuesTable() {
+    const input = document.getElementById('issueSearchInput');
+    const filter = input ? input.value.toLowerCase().trim() : '';
+    const table = document.getElementById('issuesTable');
+    if (!table) return;
+    const trs = table.querySelectorAll('tbody tr');
+
+    trs.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = (!filter || text.includes(filter)) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

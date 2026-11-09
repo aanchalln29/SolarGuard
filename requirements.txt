@@ -1,0 +1,39 @@
+# =============================================================================
+# SolarGuard -- Project Dependencies
+# Fully verified for Linux ARM64 (Ubuntu 22.04/24.04 aarch64 on Oracle Cloud)
+# and local development (Windows / Linux / macOS) with Python 3.11.
+# =============================================================================
+
+# Django Framework
+Django>=4.2.0,<6.2.0
+
+# Production WSGI Server & Static Files
+gunicorn>=21.2.0
+waitress>=3.0.0
+whitenoise>=6.6.0
+
+# Database Connectivity (SQLite default; PostgreSQL supported via DATABASE_URL)
+dj-database-url>=2.1.0
+psycopg2-binary>=2.9.9
+
+# Image Processing & Array Computing (Headless for ARM64 server compatibility)
+Pillow>=10.0.0
+numpy>=1.26.0
+opencv-python-headless>=4.9.0
+
+# Classical Machine Learning & Degradation Models
+scikit-learn>=1.4.0
+joblib>=1.3.0
+
+# Deep Learning Inference (MobileNetV2 CNN v3.0)
+tensorflow==2.21.0
+keras>=3.0.0
+
+# PDF Report Generation (Digital Passport & Fleet Audit)
+reportlab>=4.0.0
+
+# Payment Gateway (Razorpay Test Mode / Sandbox)
+razorpay>=1.4.1
+
+# Verification & Test Utilities
+requests>=2.31.0

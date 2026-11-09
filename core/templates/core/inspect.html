@@ -1,0 +1,245 @@
+{% extends 'core/base.html' %}
+
+{% block title %}New Inspection — SolarGuard AI Monitoring{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="sg-card mb-4">
+            <div class="sg-card-header">
+                <h4 class="sg-card-title mb-0">
+                    <i class="bi bi-camera-fill text-emerald me-2"></i>Inspect Solar Panel
+                </h4>
+                <a href="{% url 'dashboard' %}" class="btn-sg-outline btn-sm py-1 px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+            </div>
+            
+            <div class="sg-card-body p-4">
+                <form method="POST" enctype="multipart/form-data" id="inspectionForm" onsubmit="showProcessingSpinner()">
+                    {% csrf_token %}
+
+                    <!-- Panel Selection Section -->
+                    <div class="mb-4">
+                        {% if selected_panel %}
+                        <div class="p-3 rounded-4 bg-emerald-subtle border border-emerald-subtle">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-emerald text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-grid-fill fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-uppercase fw-bold text-sg-muted">Target Solar Panel Selected</div>
+                                        <h5 class="fw-bold text-sg-ink mb-0">
+                                            {{ selected_panel.permanent_id|default:selected_panel.serial_number }}
+                                        </h5>
+                                        <div class="text-sg-muted small">
+                                            <strong class="text-sg-ink">{{ selected_panel.installation.name }}</strong> &bull; 
+                                            {% if selected_panel.grid_row and selected_panel.grid_col %}
+                                                Position: Row {{ selected_panel.grid_row }}, Col {{ selected_panel.grid_col }}
+                                            {% else %}
+                                                Array Position: Unplaced
+                                            {% endif %}
+                                            {% if selected_panel.serial_number %}
+                                                &bull; S/N: <span class="font-monospace">{{ selected_panel.serial_number }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="{% url 'panel_detail' selected_panel.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                        <i class="bi bi-person-vcard me-1"></i> Passport
+                                    </a>
+                                    <a href="{% url 'inspect' %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                                        Change Panel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="panel" value="{{ selected_panel.id }}">
+                        {% else %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="panelSelect" class="form-label fw-bold text-sg-ink mb-0">
+                                Target Solar Panel
+                            </label>
+                            <a href="{% url 'panel_add' %}" class="small text-decoration-none fw-semibold" style="color: var(--sg-primary);">
+                                <i class="bi bi-plus-circle me-1"></i> Register New Panel
+                            </a>
+                        </div>
+                        <select name="panel" id="panelSelect" class="form-select form-select-lg" required>
+                            <option value="" disabled {% if not form.initial.panel %}selected{% endif %}>-- Select a Solar Panel from Your Arrays --</option>
+                            {% for p in panels %}
+                            <option value="{{ p.id }}" {% if form.initial.panel|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+                                {{ p.permanent_id|default:p.serial_number }} — {{ p.installation.name }} (Row {{ p.grid_row|default:"?" }}, Col {{ p.grid_col|default:"?" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.panel.errors %}
+                        <div class="text-danger small mt-1">{{ form.panel.errors }}</div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="mb-4">
+                        <label for="imageInput" class="form-label fw-bold text-sg-ink mb-1">
+                            Panel Surface Photograph
+                        </label>
+                        <div class="text-sg-muted small mb-2">
+                            Upload a clear front-facing photograph of the solar module surface.
+                        </div>
+                        
+                        <!-- Dropzone Area -->
+                        <div class="sg-dropzone" id="dropzoneBox" onclick="document.getElementById('imageInput').click()">
+                            <i class="bi bi-cloud-arrow-up-fill"></i>
+                            <div class="fw-bold text-sg-ink mb-1">Click to browse or drag &amp; drop photo here</div>
+                            <div class="text-sg-muted small">Supported formats: JPEG, PNG &bull; Front-facing RGB surface photograph (Max 10 MB)</div>
+                            <input type="file" name="image" id="imageInput" class="d-none" accept="image/jpeg,image/png,image/jpg" required onchange="previewImage(event)">
+                        </div>
+
+                        {% if form.image.errors %}
+                        <div class="text-danger small mt-1">{{ form.image.errors }}</div>
+                        {% endif %}
+
+                        <!-- Image Preview Box with Metadata -->
+                        <div class="mt-3 p-3 rounded-4 bg-light border" id="previewContainer" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                                <div>
+                                    <span class="small fw-bold text-sg-ink" id="previewFileName">Selected Image</span>
+                                    <span class="badge bg-secondary text-white ms-2" id="previewFileSize">0 KB</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" onclick="clearImagePreview()">
+                                    <i class="bi bi-x-circle me-1"></i> Change Photo
+                                </button>
+                            </div>
+                            <div class="text-center p-2 bg-white rounded-3 border">
+                                <img id="imagePreview" src="#" alt="Selected Image Preview" class="rounded-2 shadow-xs" style="max-height: 280px; max-width: 100%; object-fit: contain;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Optional Engineer Notes -->
+                    <div class="mb-4">
+                        <label for="inspectionNotes" class="form-label fw-semibold text-sg-muted">
+                            Field Notes (Optional)
+                        </label>
+                        <textarea name="notes" id="inspectionNotes" class="form-control" rows="2" placeholder="e.g. Routine quarterly scan, unusual dust observed after dust storm..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn-sg-primary btn-lg justify-content-center shadow-xs" id="submitBtn">
+                            <i class="bi bi-camera me-1"></i> Run Panel Inspection
+                        </button>
+                    </div>
+
+                    <!-- Processing State Modal / Spinner -->
+                    <div id="processingState" class="text-center mt-4 p-3 bg-light rounded-4 border" style="display: none;">
+                        <div class="spinner-border text-success" role="status" style="width: 2.2rem; height: 2.2rem;">
+                            <span class="visually-hidden">Analyzing...</span>
+                        </div>
+                        <h6 class="fw-bold text-sg-ink mt-2 mb-1">Evaluating Surface Condition...</h6>
+                        <p class="text-sg-muted small mb-0">Running MobileNetV2 CNN v3.0 feature classification &amp; transparent priority rules engine</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Inspection Pipeline Info Card -->
+        <div class="sg-card p-4">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sg-primary-dark);">
+                <i class="bi bi-shield-check text-success"></i> SolarGuard MobileNetV2 Inspection Architecture
+            </h6>
+            <div class="row g-3 text-sg-muted small">
+                <div class="col-md-6">
+                    <strong class="text-sg-ink d-block mb-1">1. Deep Learning Vision (MobileNetV2 CNN v3.0)</strong>
+                    <p class="mb-0">Classifies RGB photograph into 4 supported physical classes: <em>Normal</em>, <em>Dusty</em>, <em>Bird-Dropping</em>, or <em>Surface-Damage</em>. Confidence scores represent raw model softmax probabilities, not calibrated damage probabilities.</p>
+                </div>
+                <div class="col-md-6">
+                    <strong class="text-sg-ink d-block mb-1">2. Transparent Priority Rules Engine</strong>
+                    <p class="mb-0">Synthesizes visual findings with verified array metadata (days since cleaning, array age) to provide explainable operational triage.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function previewImage(event) {
+        const input = event.target;
+        const container = document.getElementById('previewContainer');
+        const preview = document.getElementById('imagePreview');
+        const dropzone = document.getElementById('dropzoneBox');
+        const nameEl = document.getElementById('previewFileName');
+        const sizeEl = document.getElementById('previewFileSize');
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (nameEl) nameEl.textContent = file.name;
+            if (sizeEl) {
+                const sizeKb = Math.round(file.size / 1024);
+                sizeEl.textContent = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                container.style.display = 'block';
+                dropzone.style.display = 'none';
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function clearImagePreview() {
+        const input = document.getElementById('imageInput');
+        const container = document.getElementById('previewContainer');
+        const preview = document.getElementById('imagePreview');
+        const dropzone = document.getElementById('dropzoneBox');
+
+        input.value = '';
+        preview.src = '#';
+        container.style.display = 'none';
+        dropzone.style.display = 'block';
+    }
+
+    // Drag and drop event listeners
+    const dropzone = document.getElementById('dropzoneBox');
+    if (dropzone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            const input = document.getElementById('imageInput');
+            if (files && files.length > 0) {
+                input.files = files;
+                previewImage({ target: input });
+            }
+        });
+    }
+
+    function showProcessingSpinner() {
+        const btn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('processingState');
+        btn.disabled = true;
+        spinner.style.display = 'block';
+    }
+</script>
+{% endblock %}

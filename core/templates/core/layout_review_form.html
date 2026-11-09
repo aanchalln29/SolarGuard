@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Verify Layout Revision — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="mb-4">
+            <a href="{% url 'installation_detail' installation.id %}" class="text-decoration-none text-sg-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Back to {{ installation.name }}
+            </a>
+            <h2 class="fw-bold text-sg-ink mt-2 mb-1">
+                <i class="bi bi-patch-check text-warning me-2"></i>Review & Verify Array Layout
+            </h2>
+            <p class="text-sg-muted small mb-0">
+                Certified Technician & Administrator Review: Confirm the physical arrangement, row and column counts, and module placements for <strong>{{ installation.name }}</strong>.
+            </p>
+        </div>
+
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-body p-4 p-md-5">
+                <!-- Layout Revision Summary -->
+                <div class="bg-light p-3 rounded-3 border mb-4">
+                    <div class="row g-2 small">
+                        <div class="col-sm-6">
+                            <span class="text-muted">Installation:</span>
+                            <strong class="text-dark d-block">{{ installation.name }}</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted">Revision Version:</span>
+                            <strong class="text-dark d-block">v{{ revision.version_number }} (Current Status: {{ revision.get_status_display }})</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted">Grid Dimensions:</span>
+                            <strong class="text-dark d-block">{{ revision.grid_rows }} rows &times; {{ revision.grid_cols }} columns</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted">Owner / Customer:</span>
+                            <strong class="text-dark d-block">{{ installation.owner.username }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger rounded-3 mb-4">
+                        <strong class="d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Please correct the errors below:</strong>
+                        <ul class="mb-0 ps-3">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ field|title }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Decision -->
+                    <div class="mb-4">
+                        <label for="reviewStatusSelect" class="form-label text-sg-ink fw-semibold">Verification Decision <span class="text-danger">*</span></label>
+                        {{ form.status }}
+                        <div class="form-text small text-sg-muted">Select 'Approve & Mark as Verified Layout' to activate this physical layout, or 'Request Layout Adjustments' to ask the customer for revisions.</div>
+                    </div>
+
+                    <!-- Review Notes -->
+                    <div class="mb-4">
+                        <label for="reviewNotesInput" class="form-label text-sg-ink fw-semibold">Technician / Administrator Verification Notes <span class="text-danger">*</span></label>
+                        {{ form.review_notes }}
+                        <div class="form-text small text-sg-muted">Document field inspection observations, physical module orientation, or specific feedback for the customer.</div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end pt-3 border-top">
+                        <a href="{% url 'installation_detail' installation.id %}" class="btn btn-outline-secondary px-4 rounded-pill">Cancel</a>
+                        <button type="submit" class="btn btn-warning px-5 rounded-pill d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Submit Verification Decision</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1269 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_customer %}My Solar Systems — SolarGuard
+    {% elif is_technician %}My Assigned Work — SolarGuard Technician
+    {% else %}SolarGuard Overview — Fleet Administration
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Top Header & Primary Role Heading -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        {% if is_customer %}
+            <h1 class="h3 fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-sun-fill text-warning"></i> My Solar Systems
+            </h1>
+            <p class="text-sg-muted small mb-0">
+                Monitor your rooftop panels, check inspection results, and request maintenance assistance.
+            </p>
+        {% elif is_technician %}
+            <h1 class="h3 fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-wrench-adjustable text-emerald"></i> My Assigned Work
+            </h1>
+            <p class="text-sg-muted small mb-0">
+                Action queue for your assigned installations, pending layout verifications, and active maintenance tasks.
+            </p>
+        {% else %}
+            <h1 class="h3 fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-emerald"></i> SolarGuard Overview
+            </h1>
+            <p class="text-sg-muted small mb-0">
+                System-wide asset verification, technician dispatch, and operational queues.
+            </p>
+        {% endif %}
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-white border text-sg-ink px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+            <i class="bi bi-calendar3 text-emerald me-1"></i> {{ current_date_str }}
+        </span>
+        {% if is_customer %}
+            {% if selected_installation %}
+            <a href="{% url 'inspect' %}?installation_id={{ selected_installation.id }}" class="btn-sg-accent shadow-xs">
+                <i class="bi bi-camera-fill me-1"></i> Inspect Panel
+            </a>
+            {% else %}
+            <a href="{% url 'installation_add' %}" class="btn-sg-primary shadow-xs">
+                <i class="bi bi-plus-circle me-1"></i> Add Solar Installation
+            </a>
+            {% endif %}
+        {% elif is_technician %}
+            <a href="{% url 'inspect' %}" class="btn-sg-accent shadow-xs">
+                <i class="bi bi-camera-fill me-1"></i> Inspect Panel
+            </a>
+        {% else %}
+            <a href="{% url 'installation_add' %}" class="btn-sg-primary shadow-xs">
+                <i class="bi bi-plus-circle me-1"></i> Add Installation
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 1. CUSTOMER DASHBOARD ("My Solar Systems")                                -->
+<!-- ========================================================================= -->
+{% if is_customer %}
+
+    {% if total_installations == 0 %}
+    <!-- Friendly First-Time Homeowner Empty State -->
+    <div class="card sg-card border-0 shadow-sm rounded-4 text-center py-5 px-3 my-4">
+        <div class="py-4 max-w-500 mx-auto" style="max-width: 520px;">
+            <div class="mb-3">
+                <div class="d-inline-flex align-items-center justify-content-center bg-emerald-subtle rounded-circle p-4 mb-2" style="width: 88px; height: 88px;">
+                    <i class="bi bi-sun-fill text-emerald display-6"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold text-sg-ink mb-2">Add your first solar installation</h3>
+            <p class="text-sg-muted mb-4">
+                Welcome to SolarGuard! Register your home solar system to map your rooftop solar panels,
+                screen panels for physical damage with AI, and track scheduled maintenance.
+            </p>
+            <a href="{% url 'installation_add' %}" class="btn btn-emerald btn-lg rounded-pill px-4 shadow-sm">
+                <i class="bi bi-plus-circle me-2"></i> Register Solar Installation
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Homeowner KPI Cards -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1: My Installations -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card">
+                <div class="sg-kpi-icon-box sg-kpi-blue">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">My Installations</div>
+                    <div class="sg-kpi-value">{{ total_installations }}</div>
+                    <div class="sg-kpi-sub text-sg-muted">
+                        {{ total_active_panels }} active panel{{ total_active_panels|pluralize }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Panels Needing Attention -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if attention_count > 0 %}kpi-amber{% else %}kpi-success{% endif %}">
+                <div class="sg-kpi-icon-box {% if attention_count > 0 %}sg-kpi-amber{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi {% if attention_count > 0 %}bi-exclamation-triangle-fill{% else %}bi-shield-check{% endif %}"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Panels Needing Attention</div>
+                    <div class="sg-kpi-value {% if attention_count > 0 %}text-warning{% else %}text-emerald{% endif %}">
+                        {{ attention_count }}
+                    </div>
+                    <div class="sg-kpi-sub">
+                        {% if attention_count > 0 %}
+                            <span class="text-warning fw-semibold"><i class="bi bi-arrow-up-right me-1"></i> Cleaning or review</span>
+                        {% else %}
+                            <span class="text-emerald fw-semibold"><i class="bi bi-check2-circle me-1"></i> No issues detected</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Panels Not Yet Inspected -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card">
+                <div class="sg-kpi-icon-box" style="background: #F1F5F9; color: #475569;">
+                    <i class="bi bi-camera"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Not Yet Inspected</div>
+                    <div class="sg-kpi-value text-secondary">{{ not_inspected_count }}</div>
+                    <div class="sg-kpi-sub text-sg-muted">
+                        {% if not_inspected_count > 0 %}
+                            <span class="text-secondary"><i class="bi bi-info-circle me-1"></i> Photo screening recommended</span>
+                        {% else %}
+                            <span class="text-emerald"><i class="bi bi-check2-circle me-1"></i> All panels screened</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Open Maintenance Requests -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if open_issues_count > 0 %}kpi-danger{% endif %}">
+                <div class="sg-kpi-icon-box {% if open_issues_count > 0 %}sg-kpi-red{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi bi-tools"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Open Maintenance</div>
+                    <div class="sg-kpi-value {% if open_issues_count > 0 %}text-danger{% else %}text-emerald{% endif %}">
+                        {{ open_issues_count }}
+                    </div>
+                    <div class="sg-kpi-sub">
+                        {% if open_issues_count > 0 %}
+                            <span class="text-danger fw-semibold"><i class="bi bi-clock me-1"></i> Active service tickets</span>
+                        {% else %}
+                            <span class="text-emerald"><i class="bi bi-check2-circle me-1"></i> Zero pending requests</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-Installation Selector (if customer owns > 1 installation) -->
+    {% if total_installations > 1 %}
+    <div class="card sg-card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-building text-emerald fs-5"></i>
+                <span class="fw-bold text-sg-ink">Select Solar Installation:</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                {% for inst in customer_installations %}
+                <a href="?installation_id={{ inst.id }}" class="btn btn-sm rounded-pill px-3 py-1 {% if selected_installation and selected_installation.id == inst.id %}btn-emerald text-white fw-bold shadow-xs{% else %}btn-outline-secondary bg-light{% endif %}">
+                    {{ inst.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pending Verification / Draft Notification Banner -->
+    {% if pending_layout %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history fs-4 text-warning"></i>
+            <div>
+                <strong>Physical Layout Verification In Progress:</strong>
+                <span class="text-dark">Revision v{{ pending_layout.version_number }} for <em>{{ selected_installation.name }}</em> was submitted and is awaiting on-site verification by an assigned technician.</span>
+            </div>
+        </div>
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill small">Pending Physical Review</span>
+    </div>
+    {% elif draft_layout %}
+    <div class="alert alert-info border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-pencil-square fs-4 text-primary"></i>
+            <div>
+                <strong>Draft Layout In Progress:</strong>
+                <span class="text-dark">You have unsaved or unverified changes in revision v{{ draft_layout.version_number }}.</span>
+            </div>
+        </div>
+        <a href="{% url 'layout_builder' selected_installation.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+            Resume Editing &rarr;
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Main Section: Selected Installation & Rooftop Array Health Map -->
+    {% if selected_installation %}
+    <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <!-- Installation Header & Quick Actions -->
+        <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h5 class="fw-bold text-sg-ink mb-0">{{ selected_installation.name }}</h5>
+                    {% if selected_installation.is_layout_verified %}
+                    <span class="badge bg-emerald-subtle text-emerald rounded-pill px-2 py-1 small">
+                        <i class="bi bi-patch-check-fill me-1"></i> Layout Verified
+                    </span>
+                    {% else %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-1 small">
+                        <i class="bi bi-clock me-1"></i> Layout Unverified
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text-sg-muted small">
+                    <i class="bi bi-geo-alt me-1"></i> {{ selected_installation.site_location }}
+                    &bull; {{ selected_inst_stats.total }} active panel{{ selected_inst_stats.total|pluralize }}
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{% url 'inspect' %}?installation_id={{ selected_installation.id }}" class="btn btn-emerald rounded-pill px-3 shadow-xs">
+                    <i class="bi bi-camera-fill me-1"></i> Inspect Panel
+                </a>
+                <a href="{% url 'installation_detail' selected_installation.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-info-circle me-1"></i> Installation Details
+                </a>
+                <a href="{% url 'layout_builder' selected_installation.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-pencil me-1"></i> Edit Layout
+                </a>
+            </div>
+        </div>
+
+        <!-- 2D Rooftop Health Map Component -->
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <h6 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-fill text-emerald"></i>
+                    <span>Rooftop Solar Array Health Map</span>
+                </h6>
+                <span class="text-sg-muted small">Click any panel module to view its Digital Passport or start an inspection</span>
+            </div>
+
+            {% if grid_matrix %}
+            <div class="rooftop-canvas p-4 rounded-4" style="background-color: #EAEFEA; background-image: radial-gradient(#C8D6CD 1.5px, transparent 1.5px); background-size: 20px 20px; border: 2px solid #D5E0D8; overflow-x: auto;">
+                <div style="display: grid; grid-template-columns: repeat({{ selected_installation.active_layout.grid_cols|default:4 }}, minmax(130px, 1fr)); gap: 14px; margin: 0 auto; width: fit-content; min-width: 100%; justify-content: center;">
+                    {% for row_items in grid_matrix %}
+                        {% for item in row_items %}
+                            {% if not item.is_empty %}
+                                <a href="{% if item.panel_db_id %}{% url 'panel_detail' item.panel_db_id %}{% else %}#{% endif %}" class="text-decoration-none" title="Panel {{ item.panel_id }}: {{ item.condition }}">
+                                    <div class="panel-tile-detail p-3 rounded-3 d-flex flex-column justify-content-between" style="width: 130px; height: 145px; background: {{ item.tile_bg }}; border: 2px solid {{ item.tile_border }}; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.15s ease;">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="badge bg-black bg-opacity-60 rounded-pill" style="font-size: 0.65rem;">R{{ item.row }} C{{ item.col }}</span>
+                                            {% if item.is_retired %}
+                                            <span class="badge bg-secondary rounded-pill" style="font-size: 0.6rem;">Retired</span>
+                                            {% else %}
+                                            <span class="badge {{ item.badge_class }} rounded-pill" style="font-size: 0.6rem;">{{ item.category }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-center my-auto py-1">
+                                            <div class="fw-bold font-monospace text-truncate" style="font-size: 0.85rem;">{{ item.panel_id }}</div>
+                                            <div class="smaller text-white-50 text-truncate" style="font-size: 0.68rem;">{{ item.serial_number }}</div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between text-white-50 smaller" style="font-size: 0.65rem;">
+                                            <span><i class="bi bi-person-vcard"></i> Passport</span>
+                                            <i class="bi bi-chevron-right"></i>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% else %}
+                                <div class="empty-slot-detail rounded-3 d-flex flex-column align-items-center justify-content-center" style="width: 130px; height: 145px; border: 1px dashed rgba(184, 199, 190, 0.5); opacity: 0.35;" title="Empty Cell (Row {{ item.row }}, Col {{ item.col }})">
+                                    <span class="smaller text-muted" style="font-size: 0.65rem;">R{{ item.row }}, C{{ item.col }}</span>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Condition Breakdown Strip for this Rooftop -->
+            <div class="bg-light rounded-4 p-3 mt-3 border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="small fw-bold text-sg-ink me-1">Array Status:</span>
+                    <span class="badge bg-secondary text-white px-2 py-1 rounded-pill small">
+                        Not Inspected: {{ selected_inst_stats.not_inspected }}
+                    </span>
+                    <span class="badge bg-emerald text-white px-2 py-1 rounded-pill small">
+                        Normal: {{ selected_inst_stats.normal }}
+                    </span>
+                    {% if selected_inst_stats.cleaning > 0 %}
+                    <span class="badge bg-warning text-dark px-2 py-1 rounded-pill small">
+                        Cleaning Needed: {{ selected_inst_stats.cleaning }}
+                    </span>
+                    {% endif %}
+                    {% if selected_inst_stats.damage > 0 %}
+                    <span class="badge bg-danger text-white px-2 py-1 rounded-pill small">
+                        Attention: {{ selected_inst_stats.damage }}
+                    </span>
+                    {% endif %}
+                    {% if selected_inst_stats.review > 0 %}
+                    <span class="badge bg-warning text-dark px-2 py-1 rounded-pill small">
+                        Needs Review: {{ selected_inst_stats.review }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text-sg-muted smaller">
+                    <i class="bi bi-shield-check text-emerald me-1"></i> Latest visual condition
+                </div>
+            </div>
+
+            {% else %}
+            <!-- No Layout Grid Configured Yet -->
+            <div class="text-center py-5">
+                <i class="bi bi-grid-3x3 text-muted fs-1 mb-2"></i>
+                <h6 class="text-sg-ink fw-bold">No Layout Grid Configured Yet</h6>
+                <p class="text-sg-muted small mb-3">Arrange your solar panels in the layout builder to enable your visual rooftop health map.</p>
+                <a href="{% url 'layout_builder' selected_installation.id %}" class="btn btn-emerald rounded-pill px-4">
+                    <i class="bi bi-plus-circle me-1"></i> Build Panel Layout
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Secondary Section: Attention Watchlist & Recent Inspections & Maintenance -->
+    <div class="row g-4 mb-4">
+        <!-- Panels Needing Attention (Triage) -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Panels Needing Attention
+                    </h5>
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small">
+                        {{ attention_count }} panel{{ attention_count|pluralize }}
+                    </span>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if attention_panels %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Panel ID</th>
+                                    <th>Installation</th>
+                                    <th>Latest Finding</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in attention_panels %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'panel_detail' item.panel.id %}" class="fw-bold text-sg-ink text-decoration-none">
+                                            {{ item.panel.permanent_id|default:item.panel.serial_number }}
+                                        </a>
+                                    </td>
+                                    <td class="text-sg-muted small">
+                                        {{ item.panel.installation.name|default:"Home System" }}
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ item.condition.badge_class }} rounded-pill small">
+                                            {{ item.condition.category }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'panel_detail' item.panel.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                            Passport &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-shield-check text-emerald fs-1 d-block mb-2"></i>
+                        <h6 class="fw-bold text-sg-ink mb-1">No Panels Need Urgent Attention</h6>
+                        <p class="small text-sg-muted mb-0">None of your inspected panels exhibit visible surface fractures or heavy soiling.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Maintenance Requests -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-tools text-emerald"></i> Open Maintenance Requests
+                    </h5>
+                    <a href="{% url 'issue_create' %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3 py-1">
+                        <i class="bi bi-plus-circle me-1"></i> New Request
+                    </a>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if open_issues %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket</th>
+                                    <th>Status</th>
+                                    <th>Title</th>
+                                    <th>Priority</th>
+                                    <th class="text-end">View</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in open_issues %}
+                                <tr>
+                                    <td><span class="badge bg-light text-secondary border">#{{ issue.id }}</span></td>
+                                    <td>
+                                        <span class="badge rounded-pill px-2 py-1 small fw-semibold
+                                            {% if issue.status == 'Open' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25
+                                            {% elif issue.status == 'In Progress' %}bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25
+                                            {% else %}bg-secondary text-white{% endif %}">
+                                            {{ issue.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'issue_detail' issue.id %}" class="fw-semibold text-decoration-none text-sg-ink">
+                                            {{ issue.title|truncatechars:28 }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold {% if issue.priority == 'High' %}text-danger{% elif issue.priority == 'Medium' %}text-warning{% else %}text-success{% endif %}">
+                                            {{ issue.priority }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                            View &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-check2-circle text-emerald fs-1 d-block mb-2"></i>
+                        <h6 class="fw-bold text-sg-ink mb-1">Zero Open Service Tickets</h6>
+                        <p class="small text-sg-muted mb-0">No pending repairs or cleaning requests logged for your systems.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Inspections Log -->
+    <div class="sg-card mb-4">
+        <div class="sg-card-header">
+            <h5 class="sg-card-title">
+                <i class="bi bi-clock-history text-primary"></i> Recent Inspections
+            </h5>
+            <a href="{% url 'inspect' %}" class="small fw-semibold text-decoration-none" style="color: var(--sg-primary);">
+                Run Inspection &rarr;
+            </a>
+        </div>
+        <div class="sg-card-body p-0">
+            {% if recent_inspections %}
+            <div class="table-responsive">
+                <table class="sg-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Panel</th>
+                            <th>Installation</th>
+                            <th>Visible Finding</th>
+                            <th>Confidence</th>
+                            <th>Technician Verification</th>
+                            <th class="text-end">Report</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ins in recent_inspections %}
+                        <tr>
+                            <td class="text-sg-muted small">{{ ins.inspected_at|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'panel_detail' ins.panel.id %}" class="fw-bold text-sg-ink text-decoration-none">
+                                    {{ ins.panel.permanent_id|default:ins.panel.serial_number }}
+                                </a>
+                            </td>
+                            <td class="text-sg-muted small">{{ ins.panel.installation.name|default:"Home System" }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if ins.predicted_class == 'Cracked' or ins.predicted_class == 'Surface-Damage' %}badge-fault-cracked
+                                    {% elif ins.predicted_class == 'Bird-Dropping' %}badge-fault-bird
+                                    {% elif ins.predicted_class == 'Dusty' %}badge-fault-dusty
+                                    {% elif 'unable' in ins.predicted_class.lower %}badge-fault-unable
+                                    {% else %}badge-fault-normal{% endif %}">
+                                    {{ ins.predicted_class }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold text-secondary">{{ ins.confidence_score }}%</td>
+                            <td>
+                                {% if ins.review_status == 'technician_verified' %}
+                                <span class="badge bg-emerald-subtle text-emerald rounded-pill small">Verified</span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill small">AI Predicted</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'result_detail' ins.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                    View &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-camera text-secondary fs-1 d-block mb-2"></i>
+                <h6 class="fw-bold text-sg-ink mb-1">No Inspections Recorded Yet</h6>
+                <p class="small text-sg-muted mb-3">Upload panel surface photos to screen for physical anomalies.</p>
+                <a href="{% url 'inspect' %}" class="btn btn-emerald btn-sm rounded-pill px-3">
+                    <i class="bi bi-camera me-1"></i> Run First Inspection
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+<!-- ========================================================================= -->
+<!-- 2. TECHNICIAN DASHBOARD ("My Assigned Work")                              -->
+<!-- ========================================================================= -->
+{% elif is_technician %}
+
+    <!-- Technician KPI Cards -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1: Assigned Installations -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card">
+                <div class="sg-kpi-icon-box sg-kpi-blue">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Assigned Installations</div>
+                    <div class="sg-kpi-value">{{ assigned_installations_count }}</div>
+                    <div class="sg-kpi-sub text-sg-muted">
+                        Sites in portfolio
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Layouts Awaiting Verification -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if pending_layouts_count > 0 %}kpi-amber{% endif %}">
+                <div class="sg-kpi-icon-box {% if pending_layouts_count > 0 %}sg-kpi-amber{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi bi-patch-check"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Layout Verification Queue</div>
+                    <div class="sg-kpi-value {% if pending_layouts_count > 0 %}text-warning{% else %}text-emerald{% endif %}">
+                        {{ pending_layouts_count }}
+                    </div>
+                    <div class="sg-kpi-sub">
+                        {% if pending_layouts_count > 0 %}
+                            <span class="text-warning fw-semibold"><i class="bi bi-arrow-up-right me-1"></i> Physical review needed</span>
+                        {% else %}
+                            <span class="text-emerald"><i class="bi bi-check2-circle me-1"></i> All layouts verified</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Assigned Maintenance Tasks -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if assigned_tasks_count > 0 %}kpi-danger{% endif %}">
+                <div class="sg-kpi-icon-box {% if assigned_tasks_count > 0 %}sg-kpi-red{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi bi-tools"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Active Work Orders</div>
+                    <div class="sg-kpi-value {% if assigned_tasks_count > 0 %}text-danger{% else %}text-emerald{% endif %}">
+                        {{ assigned_tasks_count }}
+                    </div>
+                    <div class="sg-kpi-sub">
+                        {% if assigned_tasks_count > 0 %}
+                            <span class="text-danger fw-semibold"><i class="bi bi-clock me-1"></i> Assigned to you</span>
+                        {% else %}
+                            <span class="text-emerald"><i class="bi bi-check2-circle me-1"></i> No active work orders</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Inspections Awaiting Review -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card">
+                <div class="sg-kpi-icon-box" style="background: #F1F5F9; color: #475569;">
+                    <i class="bi bi-camera-fill"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">AI Inspections to Review</div>
+                    <div class="sg-kpi-value text-secondary">{{ unverified_inspections_count }}</div>
+                    <div class="sg-kpi-sub text-sg-muted">
+                        Awaiting expert sign-off
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if assigned_installations_count == 0 and assigned_tasks_count == 0 and pending_layouts_count == 0 %}
+    <!-- Clear Empty State for Technicians with No Current Assignments -->
+    <div class="card sg-card border-0 shadow-sm rounded-4 text-center py-5 px-3 my-4">
+        <div class="py-4 mx-auto" style="max-width: 500px;">
+            <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle p-4 mb-3" style="width: 80px; height: 80px;">
+                <i class="bi bi-wrench-adjustable text-secondary fs-1"></i>
+            </div>
+            <h4 class="fw-bold text-sg-ink mb-2">No Active Field Assignments</h4>
+            <p class="text-sg-muted mb-0">
+                You do not have any solar installations or maintenance work orders assigned to you at this time.
+                When an administrator assigns sites or tasks to your account, they will automatically appear here.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 1. Layouts Awaiting Physical Verification Queue -->
+    {% if pending_layouts %}
+    <div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-patch-check text-warning"></i>
+                    <span>Layouts Awaiting Physical Verification</span>
+                </h5>
+                <span class="text-sg-muted small">Verify rooftop panel arrangements against on-site physical coordinates</span>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill small">{{ pending_layouts_count }} Pending</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="sg-table">
+                    <thead>
+                        <tr>
+                            <th>Installation</th>
+                            <th>Customer</th>
+                            <th>Version</th>
+                            <th>Grid Arrangement</th>
+                            <th>Submitted</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rev in pending_layouts %}
+                        <tr>
+                            <td>
+                                <strong>{{ rev.installation.name }}</strong>
+                                <div class="text-sg-muted small">{{ rev.installation.site_location }}</div>
+                            </td>
+                            <td>{{ rev.installation.owner.username }}</td>
+                            <td><span class="badge bg-light text-dark border">v{{ rev.version_number }}</span></td>
+                            <td>{{ rev.grid_rows }} &times; {{ rev.grid_cols }} grid &bull; {{ rev.layout_data.active_cells|length }} panels</td>
+                            <td class="text-sg-muted small">{{ rev.created_at|date:"M d, Y" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'layout_verify' rev.id %}" class="btn btn-sm btn-warning rounded-pill px-3 shadow-xs">
+                                    <i class="bi bi-patch-check me-1"></i> Review Layout
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 2. Assigned Maintenance Work Orders -->
+    {% if assigned_tasks %}
+    <div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-tools text-danger"></i>
+                    <span>Assigned Maintenance Work Orders</span>
+                </h5>
+                <span class="text-sg-muted small">Active service tickets allocated to your schedule</span>
+            </div>
+            <a href="{% url 'issue_list' %}" class="small fw-semibold text-decoration-none" style="color: var(--sg-primary);">
+                View All Queue &rarr;
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="sg-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Status</th>
+                            <th>Installation</th>
+                            <th>Target Panel</th>
+                            <th>Priority</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in assigned_tasks %}
+                        <tr>
+                            <td><span class="badge bg-light text-secondary border">#{{ issue.id }}</span></td>
+                            <td>
+                                <span class="badge rounded-pill px-2 py-1 small fw-semibold
+                                    {% if issue.status == 'Assigned' %}bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25
+                                    {% elif issue.status == 'In Progress' %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25
+                                    {% else %}bg-secondary text-white{% endif %}">
+                                    {{ issue.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ issue.installation.name }}</strong>
+                                <div class="text-sg-muted small">{{ issue.installation.site_location }}</div>
+                            </td>
+                            <td>
+                                <span class="font-monospace fw-bold">{{ issue.panel.permanent_id|default:issue.panel.serial_number }}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold {% if issue.priority == 'High' %}text-danger{% elif issue.priority == 'Medium' %}text-warning{% else %}text-success{% endif %}">
+                                    {{ issue.priority }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                    <i class="bi bi-pencil-square me-1"></i> Update Work Order
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 3. Inspections Needing Review & Assigned Installations -->
+    <div class="row g-4 mb-4">
+        <!-- Inspections Awaiting Review -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-camera text-primary"></i> AI Predictions Awaiting Review
+                    </h5>
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small">
+                        {{ unverified_inspections_count }} records
+                    </span>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if unverified_inspections %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Panel</th>
+                                    <th>AI Finding</th>
+                                    <th>Confidence</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ins in unverified_inspections %}
+                                <tr>
+                                    <td class="text-sg-muted small">{{ ins.inspected_at|date:"M d" }}</td>
+                                    <td>
+                                        <a href="{% url 'panel_detail' ins.panel.id %}" class="fw-bold text-sg-ink text-decoration-none">
+                                            {{ ins.panel.permanent_id|default:ins.panel.serial_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border small">{{ ins.predicted_class }}</span>
+                                    </td>
+                                    <td class="small">{{ ins.confidence_score }}%</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'result_detail' ins.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            Review Inspection
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-check2-circle text-emerald fs-2 d-block mb-1"></i>
+                        <h6 class="fw-bold text-sg-ink mb-1">All AI Inspections Reviewed</h6>
+                        <p class="small text-sg-muted mb-0">No unverified predictions awaiting expert sign-off.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Installations Overview -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-building text-emerald"></i> Assigned Solar Arrays
+                    </h5>
+                    <a href="{% url 'installation_list' %}" class="small fw-semibold text-decoration-none" style="color: var(--sg-primary);">
+                        All Sites &rarr;
+                    </a>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if assigned_installations %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Installation</th>
+                                    <th>Customer</th>
+                                    <th>Panels</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inst in assigned_installations %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'installation_detail' inst.id %}" class="fw-bold text-sg-ink text-decoration-none">
+                                            {{ inst.name }}
+                                        </a>
+                                        <div class="text-sg-muted small">{{ inst.site_location }}</div>
+                                    </td>
+                                    <td class="small">{{ inst.owner.username }}</td>
+                                    <td class="small">{{ inst.total_panels_count }}</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'inspect' %}?installation_id={{ inst.id }}" class="btn btn-sm btn-outline-emerald rounded-pill px-2">
+                                            <i class="bi bi-camera me-1"></i> Inspect
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <p class="small mb-0">No solar installations currently assigned.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- ========================================================================= -->
+<!-- 3. ADMIN DASHBOARD ("SolarGuard Overview")                                -->
+<!-- ========================================================================= -->
+{% else %}
+
+    <!-- Admin Platform KPI Cards -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1: Total Installations -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card">
+                <div class="sg-kpi-icon-box sg-kpi-blue">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Total Installations</div>
+                    <div class="sg-kpi-value">{{ total_installations }}</div>
+                    <div class="sg-kpi-sub text-sg-muted">
+                        {{ total_active_panels }} active panel{{ total_active_panels|pluralize }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Panels Needing Attention -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if attention_count > 0 %}kpi-amber{% else %}kpi-success{% endif %}">
+                <div class="sg-kpi-icon-box {% if attention_count > 0 %}sg-kpi-amber{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Panels Needing Attention</div>
+                    <div class="sg-kpi-value {% if attention_count > 0 %}text-warning{% else %}text-emerald{% endif %}">
+                        {{ attention_count }}
+                    </div>
+                    <div class="sg-kpi-sub">
+                        {{ damage_count }} damage &bull; {{ cleaning_count }} cleaning &bull; {{ review_count }} review
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Layout Verification Queue -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if layout_queue_count > 0 %}kpi-amber{% endif %}">
+                <div class="sg-kpi-icon-box {% if layout_queue_count > 0 %}sg-kpi-amber{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi bi-patch-check"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Layout Queue</div>
+                    <div class="sg-kpi-value {% if layout_queue_count > 0 %}text-warning{% else %}text-emerald{% endif %}">
+                        {{ layout_queue_count }}
+                    </div>
+                    <div class="sg-kpi-sub text-sg-muted">
+                        Awaiting technician sign-off
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Unassigned Maintenance Requests -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="sg-kpi-card {% if unassigned_issues_count > 0 %}kpi-danger{% endif %}">
+                <div class="sg-kpi-icon-box {% if unassigned_issues_count > 0 %}sg-kpi-red{% else %}sg-kpi-green{% endif %}">
+                    <i class="bi bi-person-x"></i>
+                </div>
+                <div>
+                    <div class="sg-kpi-label">Unassigned Requests</div>
+                    <div class="sg-kpi-value {% if unassigned_issues_count > 0 %}text-danger{% else %}text-emerald{% endif %}">
+                        {{ unassigned_issues_count }}
+                    </div>
+                    <div class="sg-kpi-sub">
+                        <span class="{% if unassigned_issues_count > 0 %}text-danger fw-semibold{% else %}text-emerald{% endif %}">
+                            Needs technician allocation
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Operational Queues Row 1: Layout Queue & Unassigned Maintenance -->
+    <div class="row g-4 mb-4">
+        <!-- Layout Verification Queue -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-patch-check text-warning"></i> Layout Verification Queue
+                    </h5>
+                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1 small">{{ layout_queue_count }}</span>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if layout_queue %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Installation</th>
+                                    <th>Owner</th>
+                                    <th>Version</th>
+                                    <th>Submitted</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rev in layout_queue %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ rev.installation.name }}</strong>
+                                        <div class="text-sg-muted small">{{ rev.installation.site_location }}</div>
+                                    </td>
+                                    <td>{{ rev.installation.owner.username }}</td>
+                                    <td><span class="badge bg-light text-dark border">v{{ rev.version_number }}</span></td>
+                                    <td class="text-sg-muted small">{{ rev.created_at|date:"M d" }}</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'layout_verify' rev.id %}" class="btn btn-sm btn-warning rounded-pill px-3 shadow-xs">
+                                            Review Layout
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-check2-circle text-emerald fs-2 d-block mb-1"></i>
+                        <h6 class="fw-bold text-sg-ink mb-1">Queue Cleared</h6>
+                        <p class="small text-sg-muted mb-0">No draft layouts awaiting physical verification.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Unassigned Maintenance Requests Queue -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-person-x text-danger"></i> Unassigned Maintenance Requests
+                    </h5>
+                    <a href="{% url 'issue_list' %}" class="small fw-semibold text-decoration-none" style="color: var(--sg-primary);">
+                        All Tickets &rarr;
+                    </a>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if unassigned_issues %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket</th>
+                                    <th>Installation</th>
+                                    <th>Title</th>
+                                    <th>Priority</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in unassigned_issues %}
+                                <tr>
+                                    <td><span class="badge bg-light text-secondary border">#{{ issue.id }}</span></td>
+                                    <td>
+                                        <strong>{{ issue.installation.name }}</strong>
+                                        <div class="text-sg-muted small">{{ issue.panel.permanent_id|default:issue.panel.serial_number }}</div>
+                                    </td>
+                                    <td>{{ issue.title|truncatechars:24 }}</td>
+                                    <td>
+                                        <span class="fw-bold {% if issue.priority == 'High' %}text-danger{% elif issue.priority == 'Medium' %}text-warning{% else %}text-success{% endif %}">
+                                            {{ issue.priority }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                            Assign Tech
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-check2-circle text-emerald fs-2 d-block mb-1"></i>
+                        <h6 class="fw-bold text-sg-ink mb-1">All Work Orders Allocated</h6>
+                        <p class="small text-sg-muted mb-0">No unassigned maintenance requests pending dispatch.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Operational Queues Row 2: Active Work Orders & Unallocated Installations -->
+    <div class="row g-4 mb-4">
+        <!-- Active Work Orders -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-tools text-primary"></i> Active Work Orders
+                    </h5>
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small">{{ active_work_orders_count }} Active</span>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if active_work_orders %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticket</th>
+                                    <th>Installation</th>
+                                    <th>Technician</th>
+                                    <th>Status</th>
+                                    <th class="text-end">View</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for wo in active_work_orders %}
+                                <tr>
+                                    <td><span class="badge bg-light text-secondary border">#{{ wo.id }}</span></td>
+                                    <td>{{ wo.installation.name }}</td>
+                                    <td>
+                                        <span class="fw-semibold text-dark">{{ wo.assigned_technician.username|default:"Unassigned" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill small">{{ wo.status }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'issue_detail' wo.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                            View &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <p class="small mb-0">No active field work orders in progress.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Unallocated Installations (Needing Certified Technician) -->
+        <div class="col-lg-6">
+            <div class="sg-card h-100">
+                <div class="sg-card-header">
+                    <h5 class="sg-card-title">
+                        <i class="bi bi-person-gear text-emerald"></i> Installations Awaiting Technician Assignment
+                    </h5>
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small">{{ unallocated_count }}</span>
+                </div>
+                <div class="sg-card-body p-0">
+                    {% if unallocated_installations %}
+                    <div class="table-responsive">
+                        <table class="sg-table">
+                            <thead>
+                                <tr>
+                                    <th>Installation</th>
+                                    <th>Owner</th>
+                                    <th>Location</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inst in unallocated_installations %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ inst.name }}</strong>
+                                    </td>
+                                    <td>{{ inst.owner.username }}</td>
+                                    <td class="text-sg-muted small">{{ inst.site_location }}</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'installation_detail' inst.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                                            Assign &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-check2-circle text-emerald fs-2 d-block mb-1"></i>
+                        <p class="small mb-0">All registered solar installations have an assigned certified technician.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Inspection Distribution -->
+    <div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-pie-chart-fill text-emerald"></i>
+                    <span>Inspection Overview (All Time)</span>
+                </h5>
+                <p class="text-sg-muted small mb-0">
+                    Distribution of historical inspection outcomes across all registered installations.
+                </p>
+            </div>
+            <span class="badge bg-light text-secondary border rounded-pill px-3 py-2 small">
+                {{ total_historical_inspections }} inspections logged
+            </span>
+        </div>
+        <div class="card-body p-4">
+            {% if total_historical_inspections > 0 %}
+            <div style="position: relative; height: 260px; max-width: 600px; margin: 0 auto;">
+                <canvas id="historicalFaultChart"></canvas>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <p class="small mb-0">No historical inspections logged in the database yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if is_admin and total_historical_inspections > 0 %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const labels = {{ chart_labels_json|safe }};
+    const data = {{ chart_data_json|safe }};
+
+    const colorMap = {
+        'Normal': '#267A53',
+        'Dusty': '#C2821A',
+        'Bird-Dropping': '#8C531B',
+        'Cracked': '#B23B3B',
+        'Surface-Damage': '#B23B3B',
+        'Unable to assess / Retake photo': '#5C6F67'
+    };
+
+    const backgroundColors = labels.map(l => colorMap[l] || '#176B52');
+
+    const ctx = document.getElementById('historicalFaultChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 16,
+                            font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' }
+                        }
+                    }
+                },
+                cutout: '68%'
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

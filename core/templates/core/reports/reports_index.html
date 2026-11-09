@@ -1,0 +1,209 @@
+{% extends "core/base.html" %}
+
+{% block title %}SolarGuard Reports Hub — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 fw-bold mb-1 text-sg-ink d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-bar-graph text-emerald"></i>
+            <span>Reports &amp; Documentation</span>
+        </h1>
+        <p class="text-sg-muted small mb-0">
+            Generate and export physical condition records, installation summaries, and maintenance audit logs.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-white border text-sg-ink px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+            <i class="bi bi-calendar3 text-emerald me-1"></i> {{ current_date_str }}
+        </span>
+    </div>
+</div>
+
+<div class="alert alert-light border rounded-4 p-3 mb-4 shadow-xs d-flex align-items-center gap-3">
+    <div class="text-emerald fs-4"><i class="bi bi-shield-check"></i></div>
+    <div class="small text-sg-muted">
+        Reports are compiled directly from verified asset inspection records and technician maintenance logs.
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- 1. Individual Panel Inspection & Passport Report -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100 d-flex flex-column">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-emerald-subtle text-emerald px-3 py-1 rounded-pill small fw-semibold">
+                        <i class="bi bi-cpu me-1"></i> Module Level
+                    </span>
+                    <i class="bi bi-qr-code text-muted fs-4"></i>
+                </div>
+                <h5 class="fw-bold text-sg-ink mb-1">Panel Inspection Report</h5>
+                <p class="text-sg-muted small mb-0">
+                    Comprehensive Digital Passport report for an individual solar module.
+                </p>
+            </div>
+            <div class="card-body p-4 flex-grow-1">
+                <form id="panelReportForm" onsubmit="return handlePanelReport(event);">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-sg-ink">Select Solar Module</label>
+                        <select id="panelSelect" class="form-select rounded-3" required>
+                            <option value="">-- Choose Module --</option>
+                            {% for p in panels %}
+                            <option value="{{ p.id }}">
+                                {{ p.permanent_id|default:p.serial_number }} &bull; {{ p.installation.name|default:"Unlinked" }} (R{{ p.grid_row|default:"?" }}:C{{ p.grid_col|default:"?" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted">Includes current visual condition, full inspection history, and resolved work orders.</div>
+                    </div>
+
+                    <div class="d-grid gap-2 pt-2">
+                        <button type="button" class="btn btn-emerald rounded-pill py-2 shadow-xs" onclick="openPanelReport('html')">
+                            <i class="bi bi-printer me-1"></i> View Printable Report
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill py-2" onclick="openPanelReport('pdf')">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Installation Condition Summary Report -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100 d-flex flex-column">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-primary-subtle text-primary px-3 py-1 rounded-pill small fw-semibold">
+                        <i class="bi bi-building me-1"></i> Site Fleet Level
+                    </span>
+                    <i class="bi bi-grid-3x3 text-muted fs-4"></i>
+                </div>
+                <h5 class="fw-bold text-sg-ink mb-1">Installation Summary</h5>
+                <p class="text-sg-muted small mb-0">
+                    Fleet condition inventory, active/retired breakdown, and array health overview.
+                </p>
+            </div>
+            <div class="card-body p-4 flex-grow-1">
+                <form id="installationReportForm">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-sg-ink">Select Installation</label>
+                        <select id="installationSelect" class="form-select rounded-3" required>
+                            <option value="">-- Choose Solar Array --</option>
+                            {% for inst in installations %}
+                            <option value="{{ inst.id }}">{{ inst.name }} &bull; {{ inst.site_address }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted">Summarizes active modules, surface findings triage, and open maintenance tickets.</div>
+                    </div>
+
+                    <div class="d-grid gap-2 pt-2">
+                        <button type="button" class="btn btn-emerald rounded-pill py-2 shadow-xs" onclick="openInstallationReport('html')">
+                            <i class="bi bi-printer me-1"></i> View Printable Summary
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill py-2" onclick="openInstallationReport('pdf')">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Maintenance History & Work Order Audit Report -->
+    <div class="col-lg-4 col-md-12">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100 d-flex flex-column">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-1 rounded-pill small fw-semibold">
+                        <i class="bi bi-tools me-1"></i> Operational Audit
+                    </span>
+                    <i class="bi bi-journal-check text-muted fs-4"></i>
+                </div>
+                <h5 class="fw-bold text-sg-ink mb-1">Maintenance History Report</h5>
+                <p class="text-sg-muted small mb-0">
+                    Comprehensive audit trail of work orders, field actions, and technician resolutions.
+                </p>
+            </div>
+            <div class="card-body p-4 flex-grow-1">
+                <form id="maintenanceReportForm">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-sg-ink">Scope / Array</label>
+                        <select id="maintInstSelect" class="form-select rounded-3">
+                            <option value="all">-- All Accessible Sites --</option>
+                            {% for inst in installations %}
+                            <option value="{{ inst.id }}">{{ inst.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-sg-muted">From</label>
+                            <input type="date" id="maintDateFrom" class="form-control form-control-sm rounded-3">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-sg-muted">To</label>
+                            <input type="date" id="maintDateTo" class="form-control form-control-sm rounded-3">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 pt-2">
+                        <button type="button" class="btn btn-emerald rounded-pill py-2 shadow-xs" onclick="openMaintenanceReport('html')">
+                            <i class="bi bi-printer me-1"></i> View Printable Audit
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill py-2" onclick="openMaintenanceReport('pdf')">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPanelReport(format) {
+    const sel = document.getElementById('panelSelect');
+    if (!sel.value) {
+        alert("Please select a solar module first.");
+        sel.focus();
+        return;
+    }
+    let url = `/reports/panel/${sel.value}/`;
+    if (format === 'pdf') {
+        url += '?format=pdf';
+    }
+    window.open(url, '_blank');
+}
+
+function openInstallationReport(format) {
+    const sel = document.getElementById('installationSelect');
+    if (!sel.value) {
+        alert("Please select a solar installation first.");
+        sel.focus();
+        return;
+    }
+    let url = `/reports/installation/${sel.value}/`;
+    if (format === 'pdf') {
+        url += '?format=pdf';
+    }
+    window.open(url, '_blank');
+}
+
+function openMaintenanceReport(format) {
+    const inst = document.getElementById('maintInstSelect').value;
+    const dateFrom = document.getElementById('maintDateFrom').value;
+    const dateTo = document.getElementById('maintDateTo').value;
+
+    let url = `/reports/maintenance/?installation=${inst}`;
+    if (dateFrom) url += `&date_from=${dateFrom}`;
+    if (dateTo) url += `&date_to=${dateTo}`;
+    if (format === 'pdf') url += `&format=pdf`;
+
+    window.open(url, '_blank');
+}
+</script>
+{% endblock %}

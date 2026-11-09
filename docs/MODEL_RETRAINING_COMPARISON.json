@@ -1,0 +1,726 @@
+{
+  "task": "PHASE_9A_MODEL_RETRAINING_EVALUATION",
+  "timestamp": "2026-10-26 10:06:54",
+  "winning_candidate": "Candidate 1 (Baseline)",
+  "winning_checkpoint": "d:\\RBU\\RBU Sem 5\\SEPM\\Sepm Project SolarGuard\\ml_models\\candidates\\solarguard_model_v3_candidate_1_baseline.keras",
+  "validation_summary": {
+    "Candidate 1 (Baseline)": {
+      "eval": {
+        "accuracy": 0.9107883817427386,
+        "macro_p": 0.8661108535252062,
+        "macro_r": 0.7893194457995902,
+        "macro_f1": 0.8220243705759116,
+        "weighted_f1": 0.9073294952542288,
+        "ece": 0.0275100312539651,
+        "confusion_matrix": [
+          [
+            14,
+            6,
+            5,
+            0
+          ],
+          [
+            3,
+            127,
+            14,
+            4
+          ],
+          [
+            0,
+            3,
+            274,
+            0
+          ],
+          [
+            1,
+            5,
+            2,
+            24
+          ]
+        ],
+        "per_class": {
+          "Bird-Dropping": {
+            "precision": 0.7777777777777778,
+            "recall": 0.56,
+            "f1": 0.6511627906976745,
+            "support": 25
+          },
+          "Dusty": {
+            "precision": 0.900709219858156,
+            "recall": 0.8581081081081081,
+            "f1": 0.8788927335640139,
+            "support": 148
+          },
+          "Normal": {
+            "precision": 0.9288135593220339,
+            "recall": 0.9891696750902527,
+            "f1": 0.958041958041958,
+            "support": 277
+          },
+          "Surface-Damage": {
+            "precision": 0.8571428571428571,
+            "recall": 0.75,
+            "f1": 0.8,
+            "support": 32
+          }
+        }
+      },
+      "model_size_mb": 9.204618453979492,
+      "latency": {
+        "mean_ms": 211.11606500002154,
+        "p50_ms": 209.14880000009362,
+        "p95_ms": 223.36814999989656
+      },
+      "checkpoint_path": "d:\\RBU\\RBU Sem 5\\SEPM\\Sepm Project SolarGuard\\ml_models\\candidates\\solarguard_model_v3_candidate_1_baseline.keras"
+    },
+    "Candidate 2 (Class-Weighted)": {
+      "eval": {
+        "accuracy": 0.9024896265560166,
+        "macro_p": 0.7898502575954548,
+        "macro_r": 0.8687232290955216,
+        "macro_f1": 0.8199506533841406,
+        "weighted_f1": 0.9058608015516816,
+        "ece": 0.03241979544093497,
+        "confusion_matrix": [
+          [
+            19,
+            2,
+            4,
+            0
+          ],
+          [
+            11,
+            122,
+            8,
+            7
+          ],
+          [
+            4,
+            4,
+            264,
+            5
+          ],
+          [
+            1,
+            1,
+            0,
+            30
+          ]
+        ],
+        "per_class": {
+          "Bird-Dropping": {
+            "precision": 0.5428571428571428,
+            "recall": 0.76,
+            "f1": 0.6333333333333333,
+            "support": 25
+          },
+          "Dusty": {
+            "precision": 0.9457364341085271,
+            "recall": 0.8243243243243243,
+            "f1": 0.8808664259927798,
+            "support": 148
+          },
+          "Normal": {
+            "precision": 0.9565217391304348,
+            "recall": 0.9530685920577617,
+            "f1": 0.9547920433996383,
+            "support": 277
+          },
+          "Surface-Damage": {
+            "precision": 0.7142857142857143,
+            "recall": 0.9375,
+            "f1": 0.8108108108108109,
+            "support": 32
+          }
+        }
+      },
+      "model_size_mb": 9.204618453979492,
+      "latency": {
+        "mean_ms": 234.07438749998164,
+        "p50_ms": 228.67105000000265,
+        "p95_ms": 257.4724149999156
+      },
+      "checkpoint_path": "d:\\RBU\\RBU Sem 5\\SEPM\\Sepm Project SolarGuard\\ml_models\\candidates\\solarguard_model_v3_candidate_2_classweighted.keras"
+    },
+    "Candidate 3 (Focal Loss)": {
+      "eval": {
+        "accuracy": 0.8941908713692946,
+        "macro_p": 0.7801737303087317,
+        "macro_r": 0.8589898099814616,
+        "macro_f1": 0.8115042353244063,
+        "weighted_f1": 0.8978317072084904,
+        "ece": 0.09161877564127516,
+        "confusion_matrix": [
+          [
+            19,
+            3,
+            3,
+            0
+          ],
+          [
+            10,
+            123,
+            8,
+            7
+          ],
+          [
+            5,
+            7,
+            260,
+            5
+          ],
+          [
+            1,
+            2,
+            0,
+            29
+          ]
+        ],
+        "per_class": {
+          "Bird-Dropping": {
+            "precision": 0.5428571428571428,
+            "recall": 0.76,
+            "f1": 0.6333333333333333,
+            "support": 25
+          },
+          "Dusty": {
+            "precision": 0.9111111111111111,
+            "recall": 0.831081081081081,
+            "f1": 0.8692579505300353,
+            "support": 148
+          },
+          "Normal": {
+            "precision": 0.959409594095941,
+            "recall": 0.9386281588447654,
+            "f1": 0.948905109489051,
+            "support": 277
+          },
+          "Surface-Damage": {
+            "precision": 0.7073170731707317,
+            "recall": 0.90625,
+            "f1": 0.7945205479452054,
+            "support": 32
+          }
+        }
+      },
+      "model_size_mb": 9.204618453979492,
+      "latency": {
+        "mean_ms": 239.21646999999666,
+        "p50_ms": 236.86799999995856,
+        "p95_ms": 277.6628749999418
+      },
+      "checkpoint_path": "d:\\RBU\\RBU Sem 5\\SEPM\\Sepm Project SolarGuard\\ml_models\\candidates\\solarguard_model_v3_candidate_3_focalloss.keras"
+    },
+    "Candidate 4 (Augmented + Weighted)": {
+      "eval": {
+        "accuracy": 0.9087136929460581,
+        "macro_p": 0.7994840188631744,
+        "macro_r": 0.8494725400039028,
+        "macro_f1": 0.8205664561697389,
+        "weighted_f1": 0.9103870621084396,
+        "ece": 0.02401356986449467,
+        "confusion_matrix": [
+          [
+            17,
+            5,
+            3,
+            0
+          ],
+          [
+            8,
+            126,
+            6,
+            8
+          ],
+          [
+            2,
+            5,
+            266,
+            4
+          ],
+          [
+            1,
+            1,
+            1,
+            29
+          ]
+        ],
+        "per_class": {
+          "Bird-Dropping": {
+            "precision": 0.6071428571428571,
+            "recall": 0.68,
+            "f1": 0.6415094339622641,
+            "support": 25
+          },
+          "Dusty": {
+            "precision": 0.9197080291970803,
+            "recall": 0.8513513513513513,
+            "f1": 0.8842105263157894,
+            "support": 148
+          },
+          "Normal": {
+            "precision": 0.9637681159420289,
+            "recall": 0.9602888086642599,
+            "f1": 0.9620253164556962,
+            "support": 277
+          },
+          "Surface-Damage": {
+            "precision": 0.7073170731707317,
+            "recall": 0.90625,
+            "f1": 0.7945205479452054,
+            "support": 32
+          }
+        }
+      },
+      "model_size_mb": 9.204618453979492,
+      "latency": {
+        "mean_ms": 217.7722750000271,
+        "p50_ms": 216.16299999982402,
+        "p95_ms": 233.8018149996969
+      },
+      "checkpoint_path": "d:\\RBU\\RBU Sem 5\\SEPM\\Sepm Project SolarGuard\\ml_models\\candidates\\solarguard_model_v3_candidate_4_augmented.keras"
+    }
+  },
+  "active_model_on_validation": {
+    "accuracy": 0.8568464730290456,
+    "macro_p": 0.7299573958904945,
+    "macro_r": 0.8086411479168699,
+    "macro_f1": 0.7507145753948823,
+    "weighted_f1": 0.8623700483300828,
+    "ece": 0.026982908179651186,
+    "confusion_matrix": [
+      [
+        19,
+        1,
+        4,
+        1
+      ],
+      [
+        15,
+        106,
+        16,
+        11
+      ],
+      [
+        7,
+        4,
+        262,
+        4
+      ],
+      [
+        3,
+        1,
+        2,
+        26
+      ]
+    ],
+    "per_class": {
+      "Bird-Dropping": {
+        "precision": 0.4318181818181818,
+        "recall": 0.76,
+        "f1": 0.5507246376811594,
+        "support": 25
+      },
+      "Dusty": {
+        "precision": 0.9464285714285714,
+        "recall": 0.7162162162162162,
+        "f1": 0.8153846153846154,
+        "support": 148
+      },
+      "Normal": {
+        "precision": 0.9225352112676056,
+        "recall": 0.9458483754512635,
+        "f1": 0.9340463458110517,
+        "support": 277
+      },
+      "Surface-Damage": {
+        "precision": 0.6190476190476191,
+        "recall": 0.8125,
+        "f1": 0.7027027027027027,
+        "support": 32
+      }
+    }
+  },
+  "frozen_test_benchmark_head_to_head": {
+    "active_v3": {
+      "metrics": {
+        "accuracy": 0.8804123711340206,
+        "macro_p": 0.787948141498274,
+        "macro_r": 0.8365863989711221,
+        "macro_f1": 0.7988230524803416,
+        "weighted_f1": 0.8850660108122074,
+        "ece": 0.04414972503160695,
+        "confusion_matrix": [
+          [
+            20,
+            3,
+            2,
+            0
+          ],
+          [
+            14,
+            116,
+            16,
+            3
+          ],
+          [
+            6,
+            6,
+            264,
+            2
+          ],
+          [
+            4,
+            1,
+            1,
+            27
+          ]
+        ],
+        "per_class": {
+          "Bird-Dropping": {
+            "precision": 0.45454545454545453,
+            "recall": 0.8,
+            "f1": 0.5797101449275363,
+            "support": 25
+          },
+          "Dusty": {
+            "precision": 0.9206349206349206,
+            "recall": 0.7785234899328859,
+            "f1": 0.8436363636363636,
+            "support": 149
+          },
+          "Normal": {
+            "precision": 0.9328621908127208,
+            "recall": 0.9496402877697842,
+            "f1": 0.9411764705882353,
+            "support": 278
+          },
+          "Surface-Damage": {
+            "precision": 0.84375,
+            "recall": 0.8181818181818182,
+            "f1": 0.8307692307692308,
+            "support": 33
+          }
+        }
+      },
+      "confidence_interval_95": {
+        "acc_ci": [
+          0.8515463917525773,
+          0.9092783505154639
+        ],
+        "macro_f1_ci": [
+          0.7450883354615578,
+          0.8509195375321698
+        ]
+      }
+    },
+    "winning_candidate": {
+      "metrics": {
+        "accuracy": 0.911340206185567,
+        "macro_p": 0.8523127350941921,
+        "macro_r": 0.789456151978966,
+        "macro_f1": 0.815961923611602,
+        "weighted_f1": 0.9086573326658208,
+        "ece": 0.01726920555547341,
+        "confusion_matrix": [
+          [
+            14,
+            6,
+            3,
+            2
+          ],
+          [
+            3,
+            134,
+            11,
+            1
+          ],
+          [
+            0,
+            5,
+            270,
+            3
+          ],
+          [
+            1,
+            6,
+            2,
+            24
+          ]
+        ],
+        "per_class": {
+          "Bird-Dropping": {
+            "precision": 0.7777777777777778,
+            "recall": 0.56,
+            "f1": 0.6511627906976745,
+            "support": 25
+          },
+          "Dusty": {
+            "precision": 0.8874172185430463,
+            "recall": 0.8993288590604027,
+            "f1": 0.8933333333333333,
+            "support": 149
+          },
+          "Normal": {
+            "precision": 0.9440559440559441,
+            "recall": 0.9712230215827338,
+            "f1": 0.9574468085106383,
+            "support": 278
+          },
+          "Surface-Damage": {
+            "precision": 0.8,
+            "recall": 0.7272727272727273,
+            "f1": 0.7619047619047619,
+            "support": 33
+          }
+        }
+      },
+      "confidence_interval_95": {
+        "acc_ci": [
+          0.8845360824742268,
+          0.9381443298969072
+        ],
+        "macro_f1_ci": [
+          0.7484581725831635,
+          0.8734050834405052
+        ]
+      }
+    }
+  },
+  "independent_sample_test": {
+    "active_v3": {
+      "accuracy": 0.4,
+      "macro_p": 0.31838207048881206,
+      "macro_r": 0.39918207681365575,
+      "macro_f1": 0.3050498737860971,
+      "weighted_f1": 0.3053718870845185,
+      "ece": 0.16235413233439128,
+      "confusion_matrix": [
+        [
+          0,
+          1,
+          12,
+          24
+        ],
+        [
+          0,
+          4,
+          34,
+          0
+        ],
+        [
+          0,
+          4,
+          31,
+          3
+        ],
+        [
+          0,
+          0,
+          12,
+          25
+        ]
+      ],
+      "per_class": {
+        "Bird-Dropping": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 37
+        },
+        "Dusty": {
+          "precision": 0.4444444444444444,
+          "recall": 0.10526315789473684,
+          "f1": 0.1702127659574468,
+          "support": 38
+        },
+        "Normal": {
+          "precision": 0.34831460674157305,
+          "recall": 0.8157894736842105,
+          "f1": 0.4881889763779528,
+          "support": 38
+        },
+        "Surface-Damage": {
+          "precision": 0.4807692307692308,
+          "recall": 0.6756756756756757,
+          "f1": 0.5617977528089888,
+          "support": 37
+        }
+      }
+    },
+    "winning_candidate": {
+      "accuracy": 0.5533333333333333,
+      "macro_p": 0.5613489298158287,
+      "macro_r": 0.54800853485064,
+      "macro_f1": 0.47478437577562665,
+      "weighted_f1": 0.4780592785637462,
+      "ece": 0.12162553131580353,
+      "confusion_matrix": [
+        [
+          0,
+          3,
+          34,
+          0
+        ],
+        [
+          0,
+          36,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          36,
+          0
+        ],
+        [
+          0,
+          0,
+          26,
+          11
+        ]
+      ],
+      "per_class": {
+        "Bird-Dropping": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 37
+        },
+        "Dusty": {
+          "precision": 0.8780487804878049,
+          "recall": 0.9473684210526315,
+          "f1": 0.9113924050632911,
+          "support": 38
+        },
+        "Normal": {
+          "precision": 0.3673469387755102,
+          "recall": 0.9473684210526315,
+          "f1": 0.5294117647058824,
+          "support": 38
+        },
+        "Surface-Damage": {
+          "precision": 1.0,
+          "recall": 0.2972972972972973,
+          "f1": 0.4583333333333333,
+          "support": 37
+        }
+      }
+    }
+  },
+  "threshold_sweeps": [
+    {
+      "threshold": 0.3,
+      "val_accuracy": 0.9107883817427386,
+      "val_macro_f1": 0.8220243705759116,
+      "bird_drop_precision": 0.7777777777777778,
+      "bird_drop_recall": 0.56,
+      "bird_drop_f1": 0.6511627906976745
+    },
+    {
+      "threshold": 0.4,
+      "val_accuracy": 0.9107883817427386,
+      "val_macro_f1": 0.8251426734185354,
+      "bird_drop_precision": 0.8235294117647058,
+      "bird_drop_recall": 0.56,
+      "bird_drop_f1": 0.6666666666666666
+    },
+    {
+      "threshold": 0.5,
+      "val_accuracy": 0.9128630705394191,
+      "val_macro_f1": 0.830173468305226,
+      "bird_drop_precision": 0.875,
+      "bird_drop_recall": 0.56,
+      "bird_drop_f1": 0.6829268292682927
+    },
+    {
+      "threshold": 0.55,
+      "val_accuracy": 0.9128630705394191,
+      "val_macro_f1": 0.830173468305226,
+      "bird_drop_precision": 0.875,
+      "bird_drop_recall": 0.56,
+      "bird_drop_f1": 0.6829268292682927
+    },
+    {
+      "threshold": 0.6,
+      "val_accuracy": 0.9107883817427386,
+      "val_macro_f1": 0.8142630565993356,
+      "bird_drop_precision": 0.9230769230769231,
+      "bird_drop_recall": 0.48,
+      "bird_drop_f1": 0.631578947368421
+    },
+    {
+      "threshold": 0.65,
+      "val_accuracy": 0.9087136929460581,
+      "val_macro_f1": 0.8018440440272434,
+      "bird_drop_precision": 0.9166666666666666,
+      "bird_drop_recall": 0.44,
+      "bird_drop_f1": 0.5945945945945946
+    },
+    {
+      "threshold": 0.7,
+      "val_accuracy": 0.9045643153526971,
+      "val_macro_f1": 0.7802743729753023,
+      "bird_drop_precision": 0.9,
+      "bird_drop_recall": 0.36,
+      "bird_drop_f1": 0.5142857142857142
+    }
+  ],
+  "confidence_bins": [
+    {
+      "range": "0%-50%",
+      "count": 16,
+      "accuracy": 0.4375,
+      "mean_conf": 0.43450305610895157
+    },
+    {
+      "range": "50%-60%",
+      "count": 16,
+      "accuracy": 0.4375,
+      "mean_conf": 0.5544904731214046
+    },
+    {
+      "range": "60%-70%",
+      "count": 25,
+      "accuracy": 0.8,
+      "mean_conf": 0.6579973363876342
+    },
+    {
+      "range": "70%-80%",
+      "count": 31,
+      "accuracy": 0.6774193548387096,
+      "mean_conf": 0.7459229615426832
+    },
+    {
+      "range": "80%-90%",
+      "count": 30,
+      "accuracy": 0.9333333333333333,
+      "mean_conf": 0.8503193080425262
+    },
+    {
+      "range": "90%-100%",
+      "count": 364,
+      "accuracy": 0.978021978021978,
+      "mean_conf": 0.9819498733504788
+    }
+  ],
+  "smoke_test_compatibility": {
+    "input_shape": [
+      1,
+      224,
+      224,
+      3
+    ],
+    "output_shape": [
+      1,
+      4
+    ],
+    "prob_sum": 1.0,
+    "is_deterministic": true,
+    "finite_numbers": true,
+    "cpu_latency_mean_ms": 217.096075999998,
+    "cpu_latency_p95_ms": 244.49110000005015,
+    "active_model_untouched": true
+  }
+}

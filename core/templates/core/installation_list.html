@@ -1,0 +1,141 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Solar Installations — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-7">
+        <h2 class="fw-bold mb-1 text-sg-ink">
+            {% if is_admin_user %}
+                <i class="bi bi-building me-2 text-emerald"></i>All Registered Solar Installations
+            {% elif is_technician_user %}
+                <i class="bi bi-building me-2 text-warning"></i>Assigned Solar Installations
+            {% else %}
+                <i class="bi bi-building me-2 text-emerald"></i>My Solar Installations
+            {% endif %}
+        </h2>
+        <p class="text-sg-muted mb-0 small">
+            {% if is_admin_user %}
+                Comprehensive platform-wide inventory of customer solar array sites and technician allocations.
+            {% elif is_technician_user %}
+                Field installations currently assigned to your certified technician account for inspections and layout verification.
+            {% else %}
+                Manage your residential or commercial solar array sites, panel layouts, and verification requests.
+            {% endif %}
+        </p>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
+        {% if not is_technician_user %}
+        <a href="{% url 'installation_add' %}" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2">
+            <i class="bi bi-plus-circle"></i>
+            <span>Add Installation</span>
+        </a>
+        {% endif %}
+        <a href="{% url 'panel_list' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2">
+            <i class="bi bi-grid-3x3-gap"></i>
+            <span>View Panels</span>
+        </a>
+    </div>
+</div>
+
+<!-- Installations Table Card -->
+<div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 sg-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Installation Name</th>
+                        <th>Site Address / Location</th>
+                        <th>Array Type</th>
+                        <th>Panels</th>
+                        <th>Layout State</th>
+                        <th>Assigned Technician</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in installations %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url 'installation_detail' inst.id %}" class="fw-bold text-decoration-none text-sg-ink d-flex align-items-center gap-2">
+                                <i class="bi bi-building-fill text-emerald"></i>
+                                <span>{{ inst.name }}</span>
+                            </a>
+                            <div class="text-muted small">Owner: {{ inst.owner.username }}</div>
+                        </td>
+                        <td>
+                            <span class="small text-sg-ink">{{ inst.site_address|default:"—" }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border px-2 py-1 small rounded-pill">
+                                {{ inst.get_installation_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="fw-bold text-sg-ink">{{ inst.panels.count }}</span>
+                            <span class="text-muted small">modules</span>
+                        </td>
+                        <td>
+                            {% if inst.is_layout_verified %}
+                                <span class="badge bg-emerald-subtle text-success px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-patch-check-fill me-1"></i> Technician Verified
+                                </span>
+                            {% elif inst.active_layout and inst.active_layout.status == 'imported' %}
+                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small" title="Legacy array geometry awaiting on-site physical verification">
+                                    <i class="bi bi-box-arrow-in-down me-1"></i> Legacy Imported
+                                </span>
+                            {% elif inst.pending_or_draft_layout and inst.pending_or_draft_layout.status == 'pending_verification' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-hourglass-split me-1"></i> Pending Verification
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-pencil me-1"></i> Draft Layout
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inst.assigned_technician %}
+                                <span class="badge bg-info-subtle text-info-emphasis px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-person-check-fill me-1"></i> {{ inst.assigned_technician.username }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small italic">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'installation_detail' inst.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                View Details <i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-building-exclamation text-sg-muted" style="font-size: 3rem;"></i>
+                                <h5 class="fw-bold text-sg-ink mt-3">No Solar Installations Found</h5>
+                                <p class="text-sg-muted small mb-3">
+                                    {% if is_technician_user %}
+                                        There are currently no solar arrays assigned to your technician account.
+                                    {% else %}
+                                        You have not registered any solar installations yet. Start by adding your first installation.
+                                    {% endif %}
+                                </p>
+                                {% if not is_technician_user %}
+                                <a href="{% url 'installation_add' %}" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-plus-circle me-1"></i> Add Your First Installation
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

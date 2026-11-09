@@ -1,0 +1,154 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Notifications Center — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <!-- Top Header & Actions -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-2">
+                    <ol class="breadcrumb small mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none text-emerald">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Notifications Center</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold mb-1 text-sg-ink d-flex align-items-center gap-2">
+                    <i class="bi bi-bell text-emerald"></i>
+                    <span>Notifications Center</span>
+                </h1>
+                <p class="text-sg-muted small mb-0">
+                    Role-based in-app alerts and operational lifecycle updates.
+                </p>
+            </div>
+            {% if unread_count > 0 %}
+            <div>
+                <a href="{% url 'notification_mark_all_read' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-xs">
+                    <i class="bi bi-check2-all me-1 text-emerald"></i>
+                    <span>Mark All as Read</span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <a class="sg-filter-chip {% if status_filter == 'all' %}active{% endif %}" href="{% url 'notification_list' %}?status=all">
+                All Notifications <span class="badge bg-secondary ms-1">{{ all_count }}</span>
+            </a>
+            <a class="sg-filter-chip {% if status_filter == 'unread' %}active{% endif %}" href="{% url 'notification_list' %}?status=unread">
+                Unread <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+            </a>
+            <a class="sg-filter-chip {% if status_filter == 'read' %}active{% endif %}" href="{% url 'notification_list' %}?status=read">
+                Read History
+            </a>
+        </div>
+
+        <!-- Notifications Card -->
+        <div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-card-checklist text-emerald"></i>
+                    <span>Alert Feed</span>
+                </h5>
+                <span class="text-sg-muted small">Showing {{ notifications|length }} alert{{ notifications|length|pluralize }}</span>
+            </div>
+
+            <div class="card-body p-0">
+                {% if notifications %}
+                <div class="list-group list-group-flush">
+                    {% for notif in notifications %}
+                    <div class="list-group-item p-4 border-bottom {% if not notif.is_read %}bg-light bg-opacity-75 border-start border-4 border-emerald{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                            <div class="d-flex align-items-start gap-3 flex-grow-1">
+                                <!-- Event Icon -->
+                                <div class="rounded-circle p-2 mt-1 d-flex align-items-center justify-content-center flex-shrink-0" 
+                                     style="width: 40px; height: 40px; background-color: {% if not notif.is_read %}rgba(23, 107, 82, 0.12){% else %}#f1f5f9{% endif %};">
+                                    {% if 'installation' in notif.event_type %}
+                                    <i class="bi bi-building text-emerald fs-5"></i>
+                                    {% elif 'layout' in notif.event_type %}
+                                    <i class="bi bi-grid-3x3 text-primary fs-5"></i>
+                                    {% elif 'work' in notif.event_type or 'maintenance' in notif.event_type %}
+                                    <i class="bi bi-tools text-warning-emphasis fs-5"></i>
+                                    {% else %}
+                                    <i class="bi bi-bell text-secondary fs-5"></i>
+                                    {% endif %}
+                                </div>
+
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                        <h6 class="fw-bold text-sg-ink mb-0">{{ notif.title }}</h6>
+                                        {% if not notif.is_read %}
+                                        <span class="badge bg-emerald-subtle text-emerald rounded-pill px-2 py-0 smaller">New</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-sg-ink small mb-2" style="white-space: pre-line;">{{ notif.message }}</p>
+                                    <span class="text-sg-muted smaller">
+                                        <i class="bi bi-clock me-1"></i> {{ notif.created_at|date:"M d, Y &bull; H:i" }} ({{ notif.created_at|timesince }} ago)
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                {% if not notif.is_read %}
+                                <a href="{% url 'notification_mark_read' notif.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1" title="Mark as read without leaving">
+                                    <i class="bi bi-check2"></i> Mark read
+                                </a>
+                                {% endif %}
+                                {% if notif.target_url %}
+                                <a href="{% url 'notification_open' notif.id %}" class="btn btn-sm btn-emerald rounded-pill px-3 py-1 shadow-xs">
+                                    <span>View Record &rarr;</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center">
+                    <div class="small text-muted">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </div>
+                    <div>
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                            &larr; Previous
+                        </a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ms-2">
+                            Next &rarr;
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <!-- Sensible Empty State -->
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-bell-slash text-secondary fs-1 d-block mb-3 opacity-50"></i>
+                    <h5 class="fw-bold text-sg-ink">No notifications yet</h5>
+                    <p class="text-sg-muted mb-3">
+                        {% if status_filter == 'unread' %}
+                        You have no unread notifications at this time.
+                        {% else %}
+                        When events occur on your solar assets, work orders, or layouts, notifications will appear here.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'dashboard' %}" class="btn btn-emerald btn-sm rounded-pill px-4 shadow-xs">
+                        Return to Dashboard
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

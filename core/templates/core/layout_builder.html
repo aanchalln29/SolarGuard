@@ -1,0 +1,950 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Layout Builder — {{ installation.name }} — SolarGuard{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Rooftop Array Grid Styling */
+.rooftop-canvas {
+    background-color: #EAEFEA;
+    background-image: 
+        radial-gradient(#C8D6CD 1.5px, transparent 1.5px),
+        linear-gradient(to right, rgba(200, 214, 205, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(200, 214, 205, 0.4) 1px, transparent 1px);
+    background-size: 24px 24px;
+    border: 3px solid #D5E0D8;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: inset 0 2px 8px rgba(25, 43, 39, 0.06);
+    overflow-x: auto;
+    min-height: 460px;
+    transition: all 0.2s ease;
+}
+
+.layout-grid {
+    display: grid;
+    gap: 16px;
+    margin: 0 auto;
+    width: fit-content;
+    min-width: 100%;
+    justify-content: center;
+}
+
+/* Solar Panel Tile */
+.panel-tile {
+    width: 130px;
+    height: 145px;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    background: linear-gradient(145deg, #16362F, #1F4D42);
+    border: 2px solid #2B6658;
+    box-shadow: 0 4px 10px rgba(13, 61, 46, 0.18);
+    color: #FFFFFF;
+}
+
+/* Subtle Photovoltaic Cell Grid Overlay */
+.panel-tile::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 19px 24px;
+    pointer-events: none;
+}
+
+.panel-tile:hover {
+    transform: translateY(-3px);
+    border-color: #55A893;
+    box-shadow: 0 8px 18px rgba(13, 61, 46, 0.25);
+}
+
+.panel-tile.selected {
+    border-color: #D6A545 !important;
+    box-shadow: 0 0 0 4px rgba(214, 165, 69, 0.4), 0 8px 20px rgba(13, 61, 46, 0.3) !important;
+    transform: translateY(-4px) scale(1.02);
+}
+
+.panel-tile.new-panel {
+    border-color: #48BB78;
+    background: linear-gradient(145deg, #1C443A, #275C4F);
+}
+
+.panel-tile.moved-panel {
+    border-color: #4299E1;
+}
+
+/* Empty Grid Slot */
+.empty-slot {
+    width: 130px;
+    height: 145px;
+    border-radius: 10px;
+    border: 2px dashed #B8C7BE;
+    background: rgba(255, 255, 255, 0.65);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    color: #60736C;
+}
+
+.empty-slot:hover {
+    background: #FFFFFF;
+    border-color: #176B52;
+    color: #176B52;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(23, 107, 82, 0.12);
+}
+
+.empty-slot.target-active {
+    border-color: #D6A545;
+    background: rgba(253, 248, 237, 0.9);
+    color: #A96B12;
+    animation: pulseBorder 1.5s infinite;
+}
+
+@keyframes pulseBorder {
+    0% { box-shadow: 0 0 0 0 rgba(214, 165, 69, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(214, 165, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(214, 165, 69, 0); }
+}
+
+/* Preview Mode Empty Slot (transparent open roof) */
+.preview-mode .empty-slot {
+    border: 1px dashed rgba(184, 199, 190, 0.4);
+    background: transparent;
+    cursor: default;
+    opacity: 0.25;
+}
+.preview-mode .empty-slot span, 
+.preview-mode .empty-slot i {
+    display: none;
+}
+.preview-mode .panel-tile {
+    cursor: default;
+}
+.preview-mode .panel-tile:hover {
+    transform: none;
+}
+
+/* Step Wizard Navigation Bar */
+.sg-stepper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    position: relative;
+}
+.sg-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #DCE5DF;
+    color: #60736C;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.sg-step.active {
+    border-bottom-color: #176B52;
+    color: #176B52;
+    font-weight: 700;
+}
+.sg-step.completed {
+    border-bottom-color: #267A53;
+    color: #267A53;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Setup Flow Stepper (Guides Step 1 -> Step 2 -> Step 3) -->
+<div class="sg-stepper">
+    <div class="sg-step completed">
+        <i class="bi bi-check-circle-fill me-1"></i> Step 1: Installation Details
+    </div>
+    <div class="sg-step active">
+        <i class="bi bi-grid-3x3-gap-fill me-1"></i> Step 2: Arrange Solar Panels
+    </div>
+    <div class="sg-step">
+        <i class="bi bi-patch-check me-1"></i> Step 3: Review &amp; Submit
+    </div>
+</div>
+
+<!-- Header -->
+<div class="row align-items-center mb-4">
+    <div class="col-lg-6">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <a href="{% url 'installation_detail' installation.id %}" class="text-decoration-none text-sg-muted small">
+                <i class="bi bi-arrow-left me-1"></i> {{ installation.name }}
+            </a>
+            <span class="text-muted small">/</span>
+            <span class="text-sg-ink small fw-medium">Layout Builder</span>
+        </div>
+        <h2 class="fw-bold mb-1 text-sg-ink d-flex align-items-center gap-2">
+            <i class="bi bi-grid-fill text-emerald"></i>
+            <span>Solar Panel Array Builder</span>
+            {% if revision %}
+                <span class="badge bg-emerald-subtle text-emerald rounded-pill fs-6 px-3">
+                    Draft v{{ revision.version_number }}
+                </span>
+            {% endif %}
+        </h2>
+        <p class="text-sg-muted small mb-0">
+            Customize rooftop layout geometry &bull; Click to select, click to move, or click empty slots to place modules.
+        </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="col-lg-6 text-lg-end mt-3 mt-lg-0 d-flex gap-2 justify-content-lg-end flex-wrap">
+        <button type="button" id="toggleModeBtn" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+            <i class="bi bi-eye"></i>
+            <span id="modeText">Preview Mode</span>
+        </button>
+
+        {% if can_edit %}
+        <button type="button" id="saveDraftBtn" class="btn btn-outline-emerald d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+            <i class="bi bi-floppy"></i>
+            <span>Save Draft</span>
+        </button>
+
+        <button type="button" id="submitVerificationBtn" class="btn btn-emerald d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+            <i class="bi bi-send-check-fill"></i>
+            <span>Submit for Verification</span>
+        </button>
+
+        <form method="POST" action="{% url 'layout_cancel' installation.id %}" class="d-inline" onsubmit="return confirm('Cancel draft editing? Your active verified layout will remain completely intact.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+                <i class="bi bi-x-circle"></i>
+                <span>Cancel</span>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Builder Status & Grid Dimensions Bar -->
+<div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-3 p-md-4">
+        <div class="row align-items-center g-3">
+            <!-- Metrics Summary -->
+            <div class="col-md-5 d-flex align-items-center gap-3 flex-wrap">
+                <div>
+                    <span class="text-sg-muted small d-block">Placed Modules</span>
+                    <span id="panelCountBadge" class="badge bg-emerald fs-6 px-3 py-1 rounded-pill">
+                        <i class="bi bi-grid-fill me-1"></i> <span id="placedCount">0</span> Panels
+                    </span>
+                </div>
+                <div>
+                    <span class="text-sg-muted small d-block">Empty Slots</span>
+                    <span id="emptyCountBadge" class="badge bg-light text-dark border fs-6 px-3 py-1 rounded-pill">
+                        <i class="bi bi-dash-square me-1"></i> <span id="emptyCount">0</span> Empty
+                    </span>
+                </div>
+                <div>
+                    <span class="text-sg-muted small d-block">Array Dimensions</span>
+                    <span id="gridDimsBadge" class="badge bg-light text-dark border fs-6 px-3 py-1 rounded-pill">
+                        <span id="dimsText">3 × 4 Grid</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Edit Controls (Dimensions & Presets) -->
+            <div class="col-md-7" id="gridControlsArea">
+                <div class="d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
+                    <!-- Row Control -->
+                    <div class="input-group input-group-sm" style="width: 140px;">
+                        <span class="input-group-text bg-light text-sg-muted">Rows</span>
+                        <button class="btn btn-outline-secondary" type="button" id="decRowsBtn"><i class="bi bi-dash"></i></button>
+                        <input type="text" class="form-control text-center" id="gridRowsInput" value="3" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="incRowsBtn"><i class="bi bi-plus"></i></button>
+                    </div>
+
+                    <!-- Col Control -->
+                    <div class="input-group input-group-sm" style="width: 140px;">
+                        <span class="input-group-text bg-light text-sg-muted">Cols</span>
+                        <button class="btn btn-outline-secondary" type="button" id="decColsBtn"><i class="bi bi-dash"></i></button>
+                        <input type="text" class="form-control text-center" id="gridColsInput" value="4" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="incColsBtn"><i class="bi bi-plus"></i></button>
+                    </div>
+
+                    <!-- Irregular 4-3-4 Preset Quick Button -->
+                    <button type="button" id="preset434Btn" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 rounded-pill px-3" title="Instantly configure 11 panels arranged as 4 in Row 1, 3 in Row 2, and 4 in Row 3">
+                        <i class="bi bi-magic"></i>
+                        <span>4-3-4 Preset (11 Modules)</span>
+                    </button>
+
+                    <!-- Rectangular Auto-fill -->
+                    <button type="button" id="rectFillBtn" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3">
+                        <i class="bi bi-grid-3x3"></i>
+                        <span>Fill Rectangular</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Rooftop Grid Canvas -->
+<div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <!-- Interactive Helper Instruction Banner -->
+        <div id="instructionBanner" class="alert alert-info py-2 px-3 small rounded-3 mb-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill fs-6 text-info"></i>
+                <span id="instructionText">Click any module to select it. Click any empty slot to place a new module or move a selected module.</span>
+            </div>
+            <span class="badge bg-white text-info border">Interactive Grid</span>
+        </div>
+
+        <!-- Rooftop Canvas Wrapper -->
+        <div class="rooftop-canvas" id="canvasContainer">
+            <div class="layout-grid" id="layoutGrid">
+                <!-- Dynamically populated via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Selection & Module Detail Drawer -->
+<div class="card sg-card border-0 shadow-sm rounded-4 mb-4" id="selectionDrawer" style="display: none;">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-1 rounded-pill mb-1">
+                    <i class="bi bi-cursor-fill me-1"></i> Module Selected
+                </span>
+                <h5 class="fw-bold text-sg-ink mb-1 d-flex align-items-center gap-2">
+                    <span id="selectedPanelId">SG-01-P001</span>
+                    <span id="selectedPanelStatus" class="badge bg-light text-dark border small">Existing</span>
+                </h5>
+                <p class="text-sg-muted small mb-0">
+                    Position: <strong class="text-sg-ink" id="selectedPositionText">Row 1, Column 1</strong> &bull;
+                    Permanent ID remains immutable even when moved to a different row or column.
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="deselectBtn">
+                    <i class="bi bi-x-lg me-1"></i> Deselect
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" id="removeModuleBtn">
+                    <i class="bi bi-trash3 me-1"></i> Remove from Proposed Layout
+                </button>
+            </div>
+        </div>
+
+        <!-- Safe Removal Information Banner -->
+        <div id="removalAlertBanner" class="alert alert-warning py-2 px-3 small rounded-3 mt-3 mb-0" style="display: none;">
+            <i class="bi bi-shield-lock-fill me-1 text-warning"></i>
+            <strong>Safe Panel Removal:</strong> Removing this module will remove it from the proposed arrangement.
+            Past inspections, maintenance history, and permanent records are safely preserved in the database.
+        </div>
+    </div>
+</div>
+
+<!-- Legend & Architectural Guidelines -->
+<div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold text-sg-ink mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-compass text-emerald"></i>
+            <span>Rooftop Layout &amp; Identity Guidelines</span>
+        </h6>
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 22px; height: 22px; background: linear-gradient(145deg, #16362F, #1F4D42); border: 2px solid #2B6658; border-radius: 4px;"></div>
+                    <span class="small text-sg-ink fw-medium">Active Module</span>
+                </div>
+                <div class="text-sg-muted smaller ms-4">Existing registered physical module</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 22px; height: 22px; background: linear-gradient(145deg, #1C443A, #275C4F); border: 2px solid #48BB78; border-radius: 4px;"></div>
+                    <span class="small text-sg-ink fw-medium">Newly Added Module</span>
+                </div>
+                <div class="text-sg-muted smaller ms-4">Assigned stable unique identifier</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 22px; height: 22px; border: 2px dashed #B8C7BE; border-radius: 4px; background: rgba(255,255,255,0.8);"></div>
+                    <span class="small text-sg-ink fw-medium">Empty Grid Slot</span>
+                </div>
+                <div class="text-sg-muted smaller ms-4">Open roof area (creates no DB record)</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 22px; height: 22px; border: 2px solid #D6A545; box-shadow: 0 0 0 2px rgba(214,165,69,0.3); border-radius: 4px; background: #1F4D42;"></div>
+                    <span class="small text-sg-ink fw-medium">Selected for Move</span>
+                </div>
+                <div class="text-sg-muted smaller ms-4">Click target slot to move</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Permanent Removal Before Verification -->
+<div class="modal fade" id="removalConfirmModal" tabindex="-1" aria-labelledby="removalConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom p-4">
+                <h5 class="modal-title fw-bold text-sg-ink d-flex align-items-center gap-2" id="removalConfirmLabel">
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                    <span>Confirm Module Removal from Layout</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-sg-ink mb-3">
+                    Are you sure you want to remove panel <strong id="modalPanelId" class="font-monospace text-emerald"></strong> from this layout revision?
+                </p>
+                <div class="alert alert-success py-2 px-3 small rounded-3 mb-0">
+                    <i class="bi bi-shield-check me-1"></i>
+                    <strong>No Data Deletion:</strong> Removing a module from the visual layout does <em>not</em> delete historical inspections or maintenance logs.
+                    If this layout is approved, unplaced modules are retired safely.
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4" id="confirmRemovalBtn">Remove Module</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token Carrier -->
+<form id="csrfForm" style="display: none;">{% csrf_token %}</form>
+
+<!-- Layout Builder JavaScript Engine -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Initial State from Django Context
+    const installationId = {{ installation.id }};
+    const csrfToken = document.querySelector('#csrfForm [name=csrfmiddlewaretoken]').value;
+    const canEdit = {{ can_edit|yesno:"true,false" }};
+    const nextPanelIdPrefix = "SG-{{ installation.id|stringformat:'02d' }}-P";
+
+    let rawLayout = {{ initial_layout_json|safe }};
+    let existingPanels = {{ existing_panels_json|safe }};
+
+    // Working state
+    let gridRows = parseInt(rawLayout.rows) || 3;
+    let gridCols = parseInt(rawLayout.cols) || 4;
+    let activeCells = Array.isArray(rawLayout.active_cells) ? [...rawLayout.active_cells] : [];
+
+    let isPreviewMode = false;
+    let selectedCell = null; // { row, col, panel_id, serial_number, is_new }
+
+    // Map of existing panels by permanent_id
+    const existingMap = {};
+    existingPanels.forEach(p => {
+        if (p.permanent_id) existingMap[p.permanent_id] = p;
+    });
+
+    // Helper: Find cell by coordinates
+    function getCellAt(r, c) {
+        return activeCells.find(cell => cell.row === r && cell.col === c);
+    }
+
+    // Helper: Compute next unique panel sequence
+    function getNextPanelId() {
+        let maxSeq = 0;
+        const allPanels = [...existingPanels, ...activeCells];
+        const regex = new RegExp(`^SG-${String(installationId).padStart(2, '0')}-P(\\d+)$`);
+
+        allPanels.forEach(p => {
+            const pid = p.permanent_id || p.panel_id;
+            if (pid) {
+                const match = regex.exec(pid);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxSeq) maxSeq = num;
+                }
+            }
+        });
+        return `${nextPanelIdPrefix}${String(maxSeq + 1).padStart(3, '0')}`;
+    }
+
+    // 2. Render Grid Function
+    function renderGrid() {
+        const grid = document.getElementById('layoutGrid');
+        grid.style.gridTemplateColumns = `repeat(${gridCols}, minmax(130px, 1fr))`;
+        grid.innerHTML = '';
+
+        let placedCount = 0;
+
+        for (let r = 1; r <= gridRows; r++) {
+            for (let c = 1; c <= gridCols; c++) {
+                const cell = getCellAt(r, c);
+
+                if (cell) {
+                    placedCount++;
+                    const isSelected = selectedCell && selectedCell.row === r && selectedCell.col === c;
+                    const isNew = !existingMap[cell.panel_id];
+                    const existingData = existingMap[cell.panel_id] || {};
+                    const condition = existingData.condition || 'Normal';
+
+                    const tile = document.createElement('div');
+                    tile.className = `panel-tile ${isSelected ? 'selected' : ''} ${isNew ? 'new-panel' : ''}`;
+                    tile.dataset.row = r;
+                    tile.dataset.col = c;
+                    tile.dataset.panelId = cell.panel_id;
+
+                    tile.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="badge ${isNew ? 'bg-success' : 'bg-black bg-opacity-50'} rounded-pill" style="font-size: 0.65rem;">
+                                ${isNew ? 'New' : 'R' + r + ' C' + c}
+                            </span>
+                            <span class="badge ${condition === 'Normal' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} rounded-pill" style="font-size: 0.6rem;">
+                                <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i> ${condition}
+                            </span>
+                        </div>
+                        <div class="text-center my-auto py-1">
+                            <div class="fw-bold font-monospace text-truncate" style="font-size: 0.85rem;" title="${cell.panel_id}">
+                                ${cell.panel_id}
+                            </div>
+                            <div class="smaller text-white-50 text-truncate" style="font-size: 0.68rem;">
+                                ${cell.serial_number || cell.panel_id}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between smaller text-white-50" style="font-size: 0.65rem;">
+                            <span><i class="bi bi-sun"></i> Photovoltaic</span>
+                            <span class="font-monospace">#${cell.panel_id.split('-P')[1] || ''}</span>
+                        </div>
+                    `;
+
+                    if (!isPreviewMode && canEdit) {
+                        tile.addEventListener('click', () => handlePanelClick(cell, r, c));
+                    }
+                    grid.appendChild(tile);
+
+                } else {
+                    // Empty Grid Slot
+                    const slot = document.createElement('div');
+                    slot.className = `empty-slot ${selectedCell ? 'target-active' : ''}`;
+                    slot.dataset.row = r;
+                    slot.dataset.col = c;
+
+                    slot.innerHTML = `
+                        <i class="bi ${selectedCell ? 'bi-box-arrow-in-down' : 'bi-plus-lg'} fs-4 mb-1"></i>
+                        <span class="smaller fw-medium">${selectedCell ? 'Place Here' : 'Empty Slot'}</span>
+                        <span class="smaller text-muted" style="font-size: 0.65rem;">R${r}, C${c}</span>
+                    `;
+
+                    if (!isPreviewMode && canEdit) {
+                        slot.addEventListener('click', () => handleEmptySlotClick(r, c));
+                    }
+                    grid.appendChild(slot);
+                }
+            }
+        }
+
+        // Update statistics
+        const totalSlots = gridRows * gridCols;
+        const emptySlots = totalSlots - placedCount;
+
+        document.getElementById('placedCount').textContent = placedCount;
+        document.getElementById('emptyCount').textContent = emptySlots;
+        document.getElementById('dimsText').textContent = `${gridRows} × ${gridCols} Grid`;
+        document.getElementById('gridRowsInput').value = gridRows;
+        document.getElementById('gridColsInput').value = gridCols;
+
+        updateSelectionDrawer();
+    }
+
+    // 3. User Interactions
+    function handlePanelClick(cell, r, c) {
+        if (selectedCell && selectedCell.row === r && selectedCell.col === c) {
+            // Deselect if already selected
+            selectedCell = null;
+        } else {
+            selectedCell = { ...cell, row: r, col: c };
+        }
+        renderGrid();
+    }
+
+    function handleEmptySlotClick(r, c) {
+        if (selectedCell) {
+            // MOVE selected panel to this empty slot
+            // Keep its permanent ID completely unchanged!
+            const oldRow = selectedCell.row;
+            const oldCol = selectedCell.col;
+
+            // Remove from old slot
+            activeCells = activeCells.filter(cell => !(cell.row === oldRow && cell.col === oldCol));
+
+            // Insert into new slot with identical permanent ID & serial number
+            activeCells.push({
+                row: r,
+                col: c,
+                panel_id: selectedCell.panel_id,
+                serial_number: selectedCell.serial_number || selectedCell.panel_id,
+                status: 'active'
+            });
+
+            showToast(`Moved ${selectedCell.panel_id} to Row ${r}, Col ${c}. Permanent ID preserved.`);
+            selectedCell = null;
+            renderGrid();
+
+        } else {
+            // PLACE A NEW MODULE in this empty slot
+            const newPid = getNextPanelId();
+            activeCells.push({
+                row: r,
+                col: c,
+                panel_id: newPid,
+                serial_number: newPid,
+                status: 'active'
+            });
+
+            showToast(`Placed new module ${newPid} at Row ${r}, Col ${c}.`);
+            renderGrid();
+        }
+    }
+
+    function updateSelectionDrawer() {
+        const drawer = document.getElementById('selectionDrawer');
+        if (selectedCell && !isPreviewMode) {
+            drawer.style.display = 'block';
+            document.getElementById('selectedPanelId').textContent = selectedCell.panel_id;
+            document.getElementById('selectedPositionText').textContent = `Row ${selectedCell.row}, Column ${selectedCell.col}`;
+            
+            const isNew = !existingMap[selectedCell.panel_id];
+            const badge = document.getElementById('selectedPanelStatus');
+            badge.className = isNew ? 'badge bg-success-subtle text-success' : 'badge bg-light text-dark border';
+            badge.textContent = isNew ? 'New Draft Module' : 'Registered Physical Module';
+
+            document.getElementById('instructionText').textContent = 
+                `Module ${selectedCell.panel_id} selected. Click any empty slot to move it there, or click "Remove from Proposed Layout" below.`;
+        } else {
+            drawer.style.display = 'none';
+            document.getElementById('instructionText').textContent = 
+                'Click any module to select it. Click any empty slot to place a new module or move a selected module.';
+        }
+    }
+
+    // 4. Irregular 4-3-4 Preset Helper
+    document.getElementById('preset434Btn').addEventListener('click', function() {
+        if (!confirm('Apply the 4-3-4 arrangement (11 panels: 4 in Row 1, 3 in Row 2, 4 in Row 3)?')) return;
+
+        gridRows = 3;
+        gridCols = 4;
+        selectedCell = null;
+
+        // Collect existing panels or generate IDs
+        const existingList = [...existingPanels];
+        activeCells = [];
+
+        let currentSeq = 0;
+        const allIds = existingPanels.map(p => p.permanent_id);
+        const regex = new RegExp(`^SG-${String(installationId).padStart(2, '0')}-P(\\d+)$`);
+        allIds.forEach(pid => {
+            const match = regex.exec(pid);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > currentSeq) currentSeq = num;
+            }
+        });
+
+        function getNextOrExisting(idx) {
+            if (idx < existingList.length) {
+                const p = existingList[idx];
+                return {
+                    panel_id: p.permanent_id || `${nextPanelIdPrefix}${String(idx+1).padStart(3, '0')}`,
+                    serial_number: p.serial_number || p.permanent_id
+                };
+            }
+            currentSeq++;
+            const pid = `${nextPanelIdPrefix}${String(currentSeq).padStart(3, '0')}`;
+            return { panel_id: pid, serial_number: pid };
+        }
+
+        let panelIdx = 0;
+
+        // Row 1: 4 panels
+        for (let c = 1; c <= 4; c++) {
+            const data = getNextOrExisting(panelIdx++);
+            activeCells.push({ row: 1, col: c, panel_id: data.panel_id, serial_number: data.serial_number, status: 'active' });
+        }
+
+        // Row 2: 3 panels + 1 empty slot (Col 4 is empty)
+        for (let c = 1; c <= 3; c++) {
+            const data = getNextOrExisting(panelIdx++);
+            activeCells.push({ row: 2, col: c, panel_id: data.panel_id, serial_number: data.serial_number, status: 'active' });
+        }
+        // Slot (2, 4) left intentionally EMPTY!
+
+        // Row 3: 4 panels
+        for (let c = 1; c <= 4; c++) {
+            const data = getNextOrExisting(panelIdx++);
+            activeCells.push({ row: 3, col: c, panel_id: data.panel_id, serial_number: data.serial_number, status: 'active' });
+        }
+
+        showToast('Configured 4-3-4 arrangement (11 modules across 3 rows). Slot (2,4) is an empty roof space.');
+        renderGrid();
+    });
+
+    // 5. Rectangular Fill Helper
+    document.getElementById('rectFillBtn').addEventListener('click', function() {
+        const rows = parseInt(document.getElementById('gridRowsInput').value) || 3;
+        const cols = parseInt(document.getElementById('gridColsInput').value) || 4;
+
+        if (!confirm(`Fill a complete ${rows}x${cols} rectangular arrangement (${rows * cols} panels)?`)) return;
+
+        gridRows = rows;
+        gridCols = cols;
+        selectedCell = null;
+
+        const existingList = [...existingPanels];
+        activeCells = [];
+
+        let currentSeq = 0;
+        const allIds = existingPanels.map(p => p.permanent_id);
+        const regex = new RegExp(`^SG-${String(installationId).padStart(2, '0')}-P(\\d+)$`);
+        allIds.forEach(pid => {
+            const match = regex.exec(pid);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > currentSeq) currentSeq = num;
+            }
+        });
+
+        let pIdx = 0;
+        for (let r = 1; r <= rows; r++) {
+            for (let c = 1; c <= cols; c++) {
+                let pid, sn;
+                if (pIdx < existingList.length) {
+                    const p = existingList[pIdx++];
+                    pid = p.permanent_id || `${nextPanelIdPrefix}${String(pIdx).padStart(3, '0')}`;
+                    sn = p.serial_number || pid;
+                } else {
+                    currentSeq++;
+                    pid = `${nextPanelIdPrefix}${String(currentSeq).padStart(3, '0')}`;
+                    sn = pid;
+                }
+                activeCells.push({ row: r, col: c, panel_id: pid, serial_number: sn, status: 'active' });
+            }
+        }
+        showToast(`Generated ${rows}×${cols} rectangular array.`);
+        renderGrid();
+    });
+
+    // 6. Grid Resizing Controls
+    document.getElementById('incRowsBtn').addEventListener('click', () => {
+        if (gridRows < 25) { gridRows++; renderGrid(); }
+    });
+    document.getElementById('decRowsBtn').addEventListener('click', () => {
+        if (gridRows > 1) {
+            // Check if bottom row has panels
+            const hasPanelsInLastRow = activeCells.some(cell => cell.row === gridRows);
+            if (hasPanelsInLastRow) {
+                if (!confirm(`Row ${gridRows} contains placed modules. Removing this row will remove those modules from the layout. Continue?`)) return;
+                activeCells = activeCells.filter(cell => cell.row !== gridRows);
+            }
+            gridRows--;
+            renderGrid();
+        }
+    });
+
+    document.getElementById('incColsBtn').addEventListener('click', () => {
+        if (gridCols < 25) { gridCols++; renderGrid(); }
+    });
+    document.getElementById('decColsBtn').addEventListener('click', () => {
+        if (gridCols > 1) {
+            const hasPanelsInLastCol = activeCells.some(cell => cell.col === gridCols);
+            if (hasPanelsInLastCol) {
+                if (!confirm(`Column ${gridCols} contains placed modules. Removing this column will remove those modules from the layout. Continue?`)) return;
+                activeCells = activeCells.filter(cell => cell.col !== gridCols);
+            }
+            gridCols--;
+            renderGrid();
+        }
+    });
+
+    // 7. Remove Module Action & Confirmation Modal
+    const removalModal = new bootstrap.Modal(document.getElementById('removalConfirmModal'));
+    document.getElementById('removeModuleBtn').addEventListener('click', function() {
+        if (!selectedCell) return;
+        document.getElementById('modalPanelId').textContent = selectedCell.panel_id;
+        removalModal.show();
+    });
+
+    document.getElementById('confirmRemovalBtn').addEventListener('click', function() {
+        if (!selectedCell) return;
+        const pid = selectedCell.panel_id;
+        activeCells = activeCells.filter(cell => !(cell.row === selectedCell.row && cell.col === selectedCell.col));
+        selectedCell = null;
+        removalModal.hide();
+        showToast(`Removed module ${pid} from proposed layout. Historical records preserved.`);
+        renderGrid();
+    });
+
+    document.getElementById('deselectBtn').addEventListener('click', function() {
+        selectedCell = null;
+        renderGrid();
+    });
+
+    // 8. Toggle Preview Mode vs Edit Mode
+    document.getElementById('toggleModeBtn').addEventListener('click', function() {
+        isPreviewMode = !isPreviewMode;
+        const container = document.getElementById('canvasContainer');
+        const modeText = document.getElementById('modeText');
+        const controls = document.getElementById('gridControlsArea');
+
+        if (isPreviewMode) {
+            container.classList.add('preview-mode');
+            modeText.textContent = 'Edit Mode';
+            this.className = 'btn btn-emerald d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill';
+            this.querySelector('i').className = 'bi bi-pencil';
+            controls.style.opacity = '0.4';
+            controls.style.pointerEvents = 'none';
+            selectedCell = null;
+            document.getElementById('instructionText').textContent = 'Preview Mode active. This shows how your rooftop layout will appear once verified.';
+        } else {
+            container.classList.remove('preview-mode');
+            modeText.textContent = 'Preview Mode';
+            this.className = 'btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill';
+            this.querySelector('i').className = 'bi bi-eye';
+            controls.style.opacity = '1';
+            controls.style.pointerEvents = 'auto';
+            document.getElementById('instructionText').textContent = 'Click any module to select it. Click any empty slot to place a new module or move a selected module.';
+        }
+        renderGrid();
+    });
+
+    // 9. Save Draft Action (AJAX)
+    const saveBtn = document.getElementById('saveDraftBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function() {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+            try {
+                const response = await fetch(`/installations/${installationId}/layout/save/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        rows: gridRows,
+                        cols: gridCols,
+                        active_cells: activeCells
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    showToast(data.message || 'Draft layout saved successfully!');
+                } else {
+                    alert('Draft save failed: ' + (data.error || 'Server error'));
+                }
+            } catch (err) {
+                alert('Network error while saving draft: ' + err.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-floppy me-1"></i> Save Draft';
+            }
+        });
+    }
+
+    // 10. Submit for Verification Action
+    const submitBtn = document.getElementById('submitVerificationBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async function() {
+            if (activeCells.length === 0) {
+                alert('Cannot submit an empty layout. Please place at least one solar panel module in the grid.');
+                return;
+            }
+
+            if (!confirm(`Submit layout revision (${activeCells.length} modules arranged) for certified technician verification?`)) {
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting...';
+
+            try {
+                const response = await fetch(`/installations/${installationId}/layout/submit/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        rows: gridRows,
+                        cols: gridCols,
+                        active_cells: activeCells
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    window.location.href = data.redirect_url || `/installations/${installationId}/`;
+                } else {
+                    alert('Submission error: ' + (data.error || 'Server error'));
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-send-check-fill me-1"></i> Submit for Verification';
+                }
+            } catch (err) {
+                alert('Network error while submitting: ' + err.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-send-check-fill me-1"></i> Submit for Verification';
+            }
+        });
+    }
+
+    // Toast Notification Utility
+    function showToast(message) {
+        let toastContainer = document.getElementById('sgToastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'sgToastContainer';
+            toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+            toastContainer.style.zIndex = '1090';
+            document.body.appendChild(toastContainer);
+        }
+
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast align-items-center text-white bg-dark border-0 shadow-lg';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    <span>${message}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toastEl);
+        const bsToast = new bootstrap.Toast(toastEl, { delay: 3500 });
+        bsToast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    // Initial render
+    renderGrid();
+});
+</script>
+{% endblock %}

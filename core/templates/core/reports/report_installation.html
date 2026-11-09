@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Report &bull; {{ installation.name }} &mdash; SolarGuard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sg-emerald: #176B52;
+            --sg-ink: #192B27;
+            --sg-amber: #D6A545;
+            --sg-border: #DEE2E6;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--sg-ink);
+            background-color: #F8F9FA;
+            padding: 24px;
+        }
+        .report-sheet {
+            background: #ffffff;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid var(--sg-border);
+        }
+        .brand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--sg-emerald);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .brand-logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--sg-emerald);
+        }
+        .brand-logo span {
+            color: var(--sg-amber);
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--sg-ink);
+            border-bottom: 1px solid var(--sg-border);
+            padding-bottom: 6px;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        .table-custom {
+            font-size: 13px;
+        }
+        .table-custom th {
+            background-color: #F4F7F5;
+            font-weight: 600;
+            color: var(--sg-ink);
+        }
+        .disclaimer-box {
+            background-color: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 11px;
+            color: #4B5563;
+            margin-top: 30px;
+            line-height: 1.5;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .report-sheet {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controls Bar -->
+    <div class="no-print d-flex justify-content-between align-items-center max-w-950 mx-auto mb-3" style="max-width: 950px;">
+        <a href="{% url 'installation_detail' installation.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Installation
+        </a>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-sm text-white rounded-pill px-3 shadow-xs" style="background-color: #176B52;">
+                <i class="bi bi-printer me-1"></i> Print / Save as PDF
+            </button>
+            <a href="?format=pdf" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-xs">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Native PDF Download
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Sheet -->
+    <div class="report-sheet">
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <div>
+                <div class="brand-logo">Solar<span>Guard</span></div>
+                <div class="small text-muted">AI-Assisted Solar Inspection &amp; Maintenance Platform</div>
+            </div>
+            <div class="text-end">
+                <h5 class="fw-bold mb-0 text-dark">Installation Condition Summary</h5>
+                <div class="small text-muted">Generated: {{ generated_date|date:"F d, Y &bull; H:i" }}</div>
+            </div>
+        </div>
+
+        <!-- Installation Metadata -->
+        <div class="section-title">Site &amp; Array Specifications</div>
+        <table class="table table-bordered table-custom mb-3">
+            <tbody>
+                <tr>
+                    <td class="w-25 fw-semibold bg-light">Installation Name</td>
+                    <td class="w-25"><strong>{{ installation.name }}</strong></td>
+                    <td class="w-25 fw-semibold bg-light">Owner Account</td>
+                    <td class="w-25">{{ installation.owner.username|default:"Unassigned" }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-semibold bg-light">Site Address</td>
+                    <td>{{ installation.site_address|default:"N/A" }}</td>
+                    <td class="fw-semibold bg-light">Assigned Technician</td>
+                    <td>{{ installation.assigned_technician.username|default:"Unassigned" }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-semibold bg-light">Mounting Topology</td>
+                    <td>{{ installation.get_installation_type_display|default:installation.installation_type }}</td>
+                    <td class="fw-semibold bg-light">Commission Date</td>
+                    <td>{{ installation.install_date|date:"Y-m-d"|default:"Not specified" }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Fleet Condition Breakdown -->
+        <div class="section-title">Fleet Health Metric Breakdown (Active Modules)</div>
+        <div class="row g-2 mb-3 text-center">
+            <div class="col">
+                <div class="p-2 border rounded-3 bg-light">
+                    <div class="small text-muted">Active Modules</div>
+                    <div class="fs-5 fw-bold text-dark">{{ breakdown.total_active }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="p-2 border rounded-3 bg-success-subtle border-success">
+                    <div class="small text-success">Appears Normal</div>
+                    <div class="fs-5 fw-bold text-success">{{ breakdown.normal }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="p-2 border rounded-3 bg-warning-subtle border-warning">
+                    <div class="small text-warning-emphasis">Needs Cleaning</div>
+                    <div class="fs-5 fw-bold text-warning-emphasis">{{ breakdown.cleaning }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="p-2 border rounded-3 bg-danger-subtle border-danger">
+                    <div class="small text-danger">Surface Damage</div>
+                    <div class="fs-5 fw-bold text-danger">{{ breakdown.damage }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="p-2 border rounded-3 bg-light">
+                    <div class="small text-muted">Not Inspected</div>
+                    <div class="fs-5 fw-bold text-secondary">{{ breakdown.not_inspected }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="p-2 border rounded-3 bg-secondary-subtle">
+                    <div class="small text-secondary">Retired (Excluded)</div>
+                    <div class="fs-5 fw-bold text-secondary">{{ breakdown.total_retired }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Inventory Table -->
+        <div class="section-title">Module Status Inventory</div>
+        <table class="table table-bordered table-custom table-hover mb-3">
+            <thead>
+                <tr>
+                    <th>Panel ID</th>
+                    <th>Grid Pos</th>
+                    <th>Status</th>
+                    <th>Latest Finding</th>
+                    <th>Last Inspected</th>
+                    <th>Active Work Order</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in panel_summaries %}
+                <tr>
+                    <td>
+                        <strong>{{ item.panel.permanent_id|default:item.panel.serial_number }}</strong>
+                    </td>
+                    <td>R{{ item.panel.grid_row|default:"?" }}:C{{ item.panel.grid_col|default:"?" }}</td>
+                    <td>
+                        {% if item.is_retired %}
+                            <span class="badge bg-secondary rounded-pill small">Retired</span>
+                        {% else %}
+                            <span class="badge bg-success rounded-pill small">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if 'Normal' in item.condition.label %}
+                            <span class="text-success fw-semibold">{{ item.condition.label }}</span>
+                        {% elif 'Cleaning' in item.condition.label %}
+                            <span class="text-warning-emphasis fw-semibold">{{ item.condition.label }}</span>
+                        {% elif 'Damage' in item.condition.label %}
+                            <span class="text-danger fw-semibold">{{ item.condition.label }}</span>
+                        {% else %}
+                            <span class="text-muted">{{ item.condition.label }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.condition.inspection %}
+                            {{ item.condition.inspection.inspected_at|date:"Y-m-d" }}
+                        {% else %}
+                            <span class="text-muted fst-italic">Never</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.open_issue %}
+                            <span class="badge bg-warning-subtle text-dark border border-warning small">
+                                #{{ item.open_issue.id }} ({{ item.open_issue.status }})
+                            </span>
+                        {% else %}
+                            <span class="text-muted">&mdash;</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted fst-italic p-3">No panels registered for this installation.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Active Maintenance Tickets -->
+        <div class="section-title">Active Work Orders Requiring Field Attention</div>
+        {% if active_issues %}
+        <table class="table table-bordered table-custom table-hover mb-3">
+            <thead>
+                <tr>
+                    <th>Ticket #</th>
+                    <th>Date</th>
+                    <th>Panel</th>
+                    <th>Title</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Assigned Tech</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in active_issues %}
+                <tr>
+                    <td>#{{ issue.id }}</td>
+                    <td>{{ issue.created_at|date:"Y-m-d" }}</td>
+                    <td>{{ issue.panel.permanent_id|default:issue.panel.serial_number|default:"Array" }}</td>
+                    <td><strong>{{ issue.title }}</strong></td>
+                    <td>{{ issue.priority }}</td>
+                    <td>{{ issue.status }}</td>
+                    <td>{{ issue.assigned_technician.username|default:"Unassigned" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="small text-muted fst-italic">No active maintenance work orders currently open for this site.</p>
+        {% endif %}
+
+        <!-- Optical Limitations Disclaimer -->
+        <div class="disclaimer-box">
+            <strong>Technical Notice &amp; Optical Classification Limitations:</strong> Optical surface inspection reflects visible surface anomalies only. Uninspected panels are explicitly designated 'Not Inspected' and are never assumed healthy. SolarGuard does not synthesize power curves, kwH production, or efficiency percentages from photographs. Comprehensive system verification requires physical testing by certified personnel.
+        </div>
+    </div>
+
+</body>
+</html>

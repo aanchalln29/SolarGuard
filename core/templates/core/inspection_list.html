@@ -1,0 +1,253 @@
+{% extends "core/base.html" %}
+
+{% block title %}Inspection History — SolarGuard{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 fw-bold mb-1 text-sg-ink d-flex align-items-center gap-2">
+            <i class="bi bi-camera-fill text-emerald"></i>
+            <span>Inspection History</span>
+        </h1>
+        <p class="text-sg-muted small mb-0">
+            Surface condition inspection logs and technician verifications across all installations.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'inspect' %}" class="btn btn-emerald rounded-pill px-3 shadow-xs">
+            <i class="bi bi-plus-circle me-1"></i> New Inspection
+        </a>
+        <a href="{% url 'reports_index' %}" class="btn btn-outline-secondary rounded-pill px-3 shadow-xs">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i> Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="card sg-card border-0 shadow-sm rounded-4 p-3 mb-4">
+    <form method="GET" action="{% url 'inspection_list' %}" class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-sg-ink mb-1">Solar Installation</label>
+            <select name="installation" class="form-select form-select-sm rounded-3">
+                <option value="all">-- All Installations --</option>
+                {% for inst in installations %}
+                <option value="{{ inst.id }}" {% if inst_filter == inst.id|stringformat:"s" %}selected{% endif %}>
+                    {{ inst.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2 col-sm-6">
+            <label class="form-label small fw-semibold text-sg-ink mb-1">Target Panel</label>
+            <select name="panel" class="form-select form-select-sm rounded-3">
+                <option value="all">-- All Panels --</option>
+                {% for p in panels %}
+                <option value="{{ p.id }}" {% if panel_filter == p.id|stringformat:"s" %}selected{% endif %}>
+                    {{ p.permanent_id|default:p.serial_number }} {% if p.status == 'retired' %}(Retired){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2 col-sm-6">
+            <label class="form-label small fw-semibold text-sg-ink mb-1">Condition</label>
+            <select name="condition" class="form-select form-select-sm rounded-3">
+                <option value="all">-- All Conditions --</option>
+                {% for cond in conditions_list %}
+                <option value="{{ cond }}" {% if condition_filter == cond %}selected{% endif %}>{{ cond }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2 col-sm-6">
+            <label class="form-label small fw-semibold text-sg-ink mb-1">Status</label>
+            <select name="review_status" class="form-select form-select-sm rounded-3">
+                <option value="all">-- All States --</option>
+                <option value="ai_predicted" {% if review_status_filter == 'ai_predicted' %}selected{% endif %}>Pending Review</option>
+                <option value="technician_verified" {% if review_status_filter == 'technician_verified' %}selected{% endif %}>Technician Verified</option>
+                <option value="flagged" {% if review_status_filter == 'flagged' %}selected{% endif %}>Flagged for Review</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 col-sm-12 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-emerald rounded-pill px-3 flex-grow-1">
+                <i class="bi bi-funnel-fill me-1"></i> Apply
+            </button>
+            <a href="{% url 'inspection_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                Reset
+            </a>
+        </div>
+
+        <div class="col-12 pt-2 border-top mt-2 d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-sg-muted">From:</span>
+                <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm rounded-3" style="width: 140px;">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-sg-muted">To:</span>
+                <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm rounded-3" style="width: 140px;">
+            </div>
+            <div class="ms-auto text-sg-muted small">
+                Showing <strong>{{ page_obj.paginator.count }}</strong> inspection{{ page_obj.paginator.count|pluralize:"s" }}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Inspections Table Card -->
+<div class="card sg-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    {% if page_obj.object_list %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-sg-muted small text-uppercase">
+                <tr>
+                    <th class="ps-4">Date</th>
+                    <th>Panel</th>
+                    <th>Installation</th>
+                    <th>Condition</th>
+                    <th>Confidence</th>
+                    <th>Verification</th>
+                    <th class="text-end pe-4">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for insp in page_obj.object_list %}
+                <tr>
+                    <td class="ps-4 text-nowrap">
+                        <div class="fw-semibold text-sg-ink">{{ insp.inspected_at|date:"M d, Y" }}</div>
+                        <div class="text-sg-muted small">{{ insp.inspected_at|time:"H:i" }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-sg-ink">
+                            <a href="{% url 'panel_detail' insp.panel.id %}" class="text-decoration-none text-sg-ink">
+                                {{ insp.panel.permanent_id|default:insp.panel.serial_number }}
+                            </a>
+                        </div>
+                        <div class="text-sg-muted small">
+                            R{{ insp.panel.grid_row|default:"?" }}:C{{ insp.panel.grid_col|default:"?" }}
+                            {% if insp.panel.status == 'retired' %}
+                            <span class="badge bg-secondary rounded-pill small ms-1">Retired</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-sg-ink small fw-medium">
+                            {{ insp.panel.installation.name|default:"Unassigned" }}
+                        </div>
+                    </td>
+                    <td>
+                        {% if 'Normal' in insp.predicted_class %}
+                            <span class="badge bg-emerald-subtle text-success px-2 py-1 rounded-pill small">
+                                <i class="bi bi-check-circle-fill me-1"></i> Normal
+                            </span>
+                        {% elif 'Dust' in insp.predicted_class %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis px-2 py-1 rounded-pill small">
+                                <i class="bi bi-cloud-haze2 me-1"></i> Dusty
+                            </span>
+                        {% elif 'Bird' in insp.predicted_class %}
+                            <span class="badge bg-warning-subtle text-warning px-2 py-1 rounded-pill small">
+                                <i class="bi bi-droplet-fill me-1"></i> Bird-Dropping
+                            </span>
+                        {% elif 'Damage' in insp.predicted_class or 'Crack' in insp.predicted_class %}
+                            <span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill small">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ insp.predicted_class }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill small">
+                                {{ insp.predicted_class }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="text-sg-ink small fw-semibold">
+                            {% if insp.confidence_score %}
+                                {{ insp.confidence_score|floatformat:1 }}%
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if insp.review_status == 'ai_predicted' %}
+                            <span class="badge bg-light text-secondary border rounded-pill small">
+                                <i class="bi bi-cpu me-1"></i> AI Predicted
+                            </span>
+                        {% elif insp.review_status == 'technician_verified' %}
+                            {% if insp.verified_outcome and 'normal' in insp.verified_outcome|lower %}
+                                <span class="badge bg-success-subtle text-success border border-success rounded-pill small">
+                                    <i class="bi bi-patch-check-fill me-1"></i> Verified Normal
+                                </span>
+                            {% elif insp.verified_outcome %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning rounded-pill small">
+                                    <i class="bi bi-shield-check me-1"></i> Verified: {{ insp.verified_outcome }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border border-success rounded-pill small">
+                                    <i class="bi bi-patch-check-fill me-1"></i> Verified
+                                </span>
+                            {% endif %}
+                        {% elif insp.review_status == 'flagged' %}
+                            <span class="badge bg-danger-subtle text-danger rounded-pill small">
+                                <i class="bi bi-flag-fill me-1"></i> Flagged for Retake
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-secondary border rounded-pill small">
+                                {{ insp.get_review_status_display }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <a href="{% url 'result_detail' insp.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                            <i class="bi bi-eye me-1"></i> View Result
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="text-sg-muted small">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link rounded-start-pill" href="?page={{ page_obj.previous_page_number }}&installation={{ inst_filter }}&panel={{ panel_filter }}&condition={{ condition_filter }}&review_status={{ review_status_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">
+                    &laquo; Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link bg-emerald border-emerald">{{ page_obj.number }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link rounded-end-pill" href="?page={{ page_obj.next_page_number }}&installation={{ inst_filter }}&panel={{ panel_filter }}&condition={{ condition_filter }}&review_status={{ review_status_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">
+                    Next &raquo;
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="p-5 text-center">
+        <div class="display-6 text-muted mb-3"><i class="bi bi-inbox"></i></div>
+        <h5 class="fw-bold text-sg-ink mb-1">No inspections found</h5>
+        <p class="text-sg-muted small mb-3">No optical inspections match your current filter parameters.</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{% url 'inspection_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Clear Filters</a>
+            <a href="{% url 'inspect' %}" class="btn btn-sm btn-emerald rounded-pill px-3">Upload New Inspection</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

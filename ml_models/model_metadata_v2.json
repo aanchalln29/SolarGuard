@@ -1,0 +1,23 @@
+{
+    "model_version": "2.0",
+    "architecture": "MobileNetV2",
+    "class_names": [
+        "Bird-Dropping",
+        "Dusty",
+        "Normal",
+        "Surface-Damage"
+    ],
+    "image_size": [
+        224,
+        224
+    ],
+    "input_color_mode": "RGB",
+    "input_pixel_range": [
+        0,
+        255
+    ],
+    "preprocessing": "Built into model: Rescaling(1/127.5, offset=-1)",
+    "test_accuracy": 0.8524,
+    "test_images": 420,
+    "note": "Preliminary experimental evaluation; not validated for real-world safety-critical inspection."
+}

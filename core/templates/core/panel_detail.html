@@ -1,0 +1,480 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Panel Passport: {{ panel.permanent_id|default:panel.serial_number }} — SolarGuard{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none text-emerald">Dashboard</a></li>
+        {% if panel.installation %}
+        <li class="breadcrumb-item"><a href="{% url 'installation_list' %}" class="text-decoration-none text-emerald">Installations</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'installation_detail' panel.installation.id %}" class="text-decoration-none text-emerald">{{ panel.installation.name }}</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'panel_list' %}" class="text-decoration-none text-emerald">Panels</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">Panel {{ panel.permanent_id|default:panel.serial_number }}</li>
+    </ol>
+</nav>
+
+<!-- Header Banner -->
+<div class="card sg-card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <span class="badge bg-emerald-subtle text-emerald px-2 py-1 rounded-pill small font-monospace">
+                        <i class="bi bi-shield-check me-1"></i> Digital Passport
+                    </span>
+                    {% if panel.status == 'active' %}
+                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2 py-1 rounded-pill small">
+                        <i class="bi bi-check-circle-fill me-1"></i> Active Array Module
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1 rounded-pill small">
+                        <i class="bi bi-slash-circle me-1"></i> Retired
+                    </span>
+                    {% endif %}
+                    {% if panel.grid_row and panel.grid_col %}
+                    <span class="badge bg-light text-dark border px-2 py-1 rounded-pill small">
+                        <i class="bi bi-grid-fill me-1 text-emerald"></i> Row {{ panel.grid_row }}, Col {{ panel.grid_col }}
+                    </span>
+                    {% endif %}
+                </div>
+                <h2 class="h3 fw-bold text-sg-ink mb-1">
+                    {{ panel.permanent_id|default:panel.serial_number }}
+                </h2>
+                <p class="text-sg-muted small mb-0">
+                    {% if panel.installation %}
+                        Installed at <strong class="text-sg-ink">{{ panel.installation.name }}</strong> &bull; {{ panel.installation.site_address }}
+                    {% else %}
+                        Standalone / Unassigned solar module
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                {% if can_inspect %}
+                <a href="{% url 'inspect' %}?panel_id={{ panel.id }}" class="btn btn-emerald rounded-pill px-4 shadow-sm d-flex align-items-center gap-2">
+                    <i class="bi bi-camera-fill"></i>
+                    <span>Inspect This Panel</span>
+                </a>
+                {% elif panel.status == 'retired' %}
+                <button class="btn btn-secondary rounded-pill px-4 opacity-75" disabled title="Retired panels cannot be inspected">
+                    <i class="bi bi-slash-circle me-1"></i> Retired (Inspection Disabled)
+                </button>
+                {% endif %}
+                <a href="{% url 'issue_create' %}?panel_id={{ panel.id }}" class="btn btn-outline-emerald rounded-pill px-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-tools"></i>
+                    <span>Request Maintenance</span>
+                </a>
+                <a href="{% url 'report_panel' panel.id %}" target="_blank" class="btn btn-outline-dark rounded-pill px-3 d-flex align-items-center gap-1 shadow-xs">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Print Report</span>
+                </a>
+                {% if panel.installation %}
+                <a href="{% url 'installation_detail' panel.installation.id %}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-grid-3x3 me-1"></i> Array View
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Primary Passport Cards: Identity & Latest Condition -->
+<div class="row g-4 mb-4">
+    <!-- Panel System Identity Card -->
+    <div class="col-lg-5">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom p-4">
+                <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-card-text text-emerald"></i>
+                    <span>Module Specifications</span>
+                </h5>
+                <span class="text-sg-muted small">Hardware records and array placement</span>
+            </div>
+            <div class="card-body p-4">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                        <span class="text-sg-muted">Permanent Panel ID</span>
+                        <strong class="text-sg-ink font-monospace">{{ panel.permanent_id|default:"Not assigned" }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Manufacturer Serial Number</span>
+                        <strong class="text-sg-ink font-monospace">{{ panel.serial_number|default:"Not recorded" }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Solar Array Installation</span>
+                        <strong class="text-sg-ink">
+                            {% if panel.installation %}
+                            <a href="{% url 'installation_detail' panel.installation.id %}" class="text-decoration-none text-emerald">
+                                {{ panel.installation.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">Unlinked</span>
+                            {% endif %}
+                        </strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Current Array Grid Position</span>
+                        <strong class="text-sg-ink">
+                            {% if panel.grid_row and panel.grid_col %}
+                                Row {{ panel.grid_row }}, Column {{ panel.grid_col }}
+                            {% else %}
+                                <span class="text-muted">Not placed in active layout</span>
+                            {% endif %}
+                        </strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Operational Lifecycle Status</span>
+                        <span>
+                            {% if panel.status == 'active' %}
+                                <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">Retired</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Commissioning / Install Date</span>
+                        <strong class="text-sg-ink">{{ panel.install_date|date:"F d, Y"|default:"Not recorded" }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Last Recorded Cleaning</span>
+                        <strong class="text-sg-ink">
+                            {% if panel.last_cleaned_date %}
+                                {{ panel.last_cleaned_date|date:"F d, Y" }}
+                                {% if panel.days_since_last_cleaning is not None %}
+                                    <span class="text-muted">({{ panel.days_since_last_cleaning }}d ago)</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Not recorded</span>
+                            {% endif %}
+                        </strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-sg-muted">Monitored Operating Age</span>
+                        <strong class="text-sg-ink">
+                            {% if panel.panel_age_months is not None %}
+                                {{ panel.panel_age_months }} months
+                            {% else %}
+                                <span class="text-muted">Not recorded</span>
+                            {% endif %}
+                        </strong>
+                    </li>
+                </ul>
+
+                <div class="mt-3 p-3 bg-light rounded-3 small text-sg-muted border">
+                    <i class="bi bi-info-circle text-emerald me-1"></i>
+                    <strong>Hardware Integrity Notice:</strong>
+                    Panel passports track permanent hardware records and physical surface inspections. SolarGuard does not display synthetic power generation or uncalibrated live sensor telemetry.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Condition & Photo Card -->
+    <div class="col-lg-7">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-eye-fill text-emerald"></i>
+                        <span>Latest Known Visible Condition</span>
+                    </h5>
+                    <span class="text-sg-muted small">Derived from the latest valid visual inspection</span>
+                </div>
+                {% if latest_inspection %}
+                <a href="{% url 'result_detail' latest_inspection.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                    View Full Report &rarr;
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-4">
+                <!-- Condition Banner -->
+                <div class="p-3 rounded-4 mb-4 border d-flex align-items-center gap-3 
+                    {% if derived_condition.status == 'damage' %}bg-danger bg-opacity-10 border-danger border-opacity-25
+                    {% elif derived_condition.status == 'dust' or derived_condition.status == 'bird' %}bg-warning bg-opacity-10 border-warning border-opacity-25
+                    {% elif derived_condition.status == 'review' %}bg-secondary bg-opacity-10 border-secondary border-opacity-25
+                    {% elif derived_condition.status == 'not_inspected' %}bg-light border
+                    {% else %}bg-success bg-opacity-10 border-success border-opacity-25{% endif %}">
+                    
+                    <div class="fs-2">
+                        {% if derived_condition.status == 'damage' %}<i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                        {% elif derived_condition.status == 'dust' or derived_condition.status == 'bird' %}<i class="bi bi-droplet-half text-warning"></i>
+                        {% elif derived_condition.status == 'review' %}<i class="bi bi-question-circle-fill text-secondary"></i>
+                        {% elif derived_condition.status == 'not_inspected' %}<i class="bi bi-camera text-muted"></i>
+                        {% else %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+                    </div>
+                    <div>
+                        <div class="text-uppercase small fw-bold text-sg-muted">Visible Surface Status</div>
+                        <div class="h5 fw-bold mb-1 {{ derived_condition.text_class }}">
+                            {{ derived_condition.label }}
+                        </div>
+                        <div class="small text-sg-ink">
+                            {{ derived_condition.detail }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if latest_inspection %}
+                <div class="row g-3 align-items-center">
+                    <!-- Photo Thumbnail -->
+                    <div class="col-sm-5 text-center">
+                        <div class="p-2 bg-light rounded-4 border">
+                            <a href="{% url 'result_detail' latest_inspection.id %}" title="Click to view full inspection">
+                                <img src="{% url 'secure_inspection_image' latest_inspection.id %}" 
+                                     alt="Inspection Photo" 
+                                     class="img-fluid rounded-3 shadow-xs" 
+                                     style="max-height: 190px; width: 100%; object-fit: cover;">
+                            </a>
+                            <div class="text-muted smaller mt-1">
+                                <i class="bi bi-lock-fill me-1"></i> Protected image storage
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inspection Metadata -->
+                    <div class="col-sm-7">
+                        <ul class="list-group list-group-flush small">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <span class="text-sg-muted">Inspection Date</span>
+                                <strong class="text-sg-ink">{{ latest_inspection.inspected_at|date:"F d, Y at H:i" }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                <span class="text-sg-muted">AI Model Prediction</span>
+                                <span class="badge {{ derived_condition.badge_class }} rounded-pill">
+                                    {{ latest_inspection.predicted_class }}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                <span class="text-sg-muted">Prediction Confidence</span>
+                                <div>
+                                    <strong class="text-sg-ink">{{ latest_inspection.confidence_score }}%</strong>
+                                    <span class="text-muted smaller d-block" style="font-size: 0.72rem;">(Uncalibrated model score)</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start px-0 py-2">
+                                <span class="text-sg-muted">Technician Verification</span>
+                                <div class="text-end">
+                                    {% if latest_inspection.review_status == 'technician_verified' %}
+                                        <span class="badge bg-success rounded-pill mb-1">
+                                            <i class="bi bi-patch-check-fill me-1"></i> Verified
+                                        </span>
+                                        <div class="fw-semibold text-sg-ink">{{ latest_inspection.verified_outcome }}</div>
+                                        {% if latest_inspection.reviewed_by %}
+                                        <div class="text-muted smaller">By {{ latest_inspection.reviewed_by.username }} &bull; {{ latest_inspection.reviewed_at|date:"M d, Y" }}</div>
+                                        {% endif %}
+                                        {% if latest_inspection.review_notes %}
+                                        <div class="text-sg-muted smaller fst-italic mt-1">"{{ latest_inspection.review_notes }}"</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border rounded-pill">
+                                            <i class="bi bi-hourglass-split me-1"></i> Awaiting Verification
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Empty State for Uninspected Panel -->
+                <div class="text-center py-4 bg-light rounded-4 border">
+                    <i class="bi bi-camera text-muted fs-1 mb-2"></i>
+                    <h6 class="fw-bold text-sg-ink">Not Yet Inspected</h6>
+                    <p class="text-sg-muted small mb-3 px-3">
+                        No photographic inspections have been recorded for this solar module yet. Upload a clear photograph to run AI condition screening.
+                    </p>
+                    {% if can_inspect %}
+                    <a href="{% url 'inspect' %}?panel_id={{ panel.id }}" class="btn btn-emerald rounded-pill px-4">
+                        <i class="bi bi-camera me-1"></i> Run First Inspection
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Rows: Recent Inspection History & Linked Maintenance Issues -->
+<div class="row g-4">
+    <!-- Inspection History Table -->
+    <div class="col-lg-7">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-emerald"></i>
+                        <span>Inspection History</span>
+                    </h5>
+                    <span class="text-sg-muted small">Chronological record of AI scans and technician audits</span>
+                </div>
+                {% if can_inspect %}
+                <a href="{% url 'inspect' %}?panel_id={{ panel.id }}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                    <i class="bi bi-plus-circle me-1"></i> New Inspection
+                </a>
+                {% endif %}
+            </div>
+            <!-- Physical Condition Trends Notice -->
+            <div class="px-4 py-2 bg-light border-bottom small text-sg-muted d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle text-emerald"></i>
+                <span><strong>Physical Condition Timeline:</strong> Visual classifications reflect individual photographic inspections over time. AI predictions and technician verifications remain distinct and are not altered by maintenance resolutions. A new inspection is required following maintenance to update the panel's current surface condition.</span>
+            </div>
+            <div class="card-body p-0">
+                {% if inspections_history %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-sg-muted small">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Photo</th>
+                                <th>AI Prediction</th>
+                                <th>Confidence</th>
+                                <th>Verification</th>
+                                <th class="text-end pe-4">Report</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for insp in inspections_history %}
+                            <tr>
+                                <td class="ps-4 fw-medium text-sg-ink">
+                                    {{ insp.inspected_at|date:"M d, Y" }}
+                                    <div class="text-muted smaller">{{ insp.inspected_at|date:"H:i" }}</div>
+                                </td>
+                                <td>
+                                    <a href="{% url 'result_detail' insp.id %}">
+                                        <img src="{% url 'secure_inspection_image' insp.id %}" 
+                                             alt="Thumbnail" 
+                                             class="rounded-2 border shadow-xs" 
+                                             style="width: 48px; height: 48px; object-fit: cover;">
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if 'damage' in insp.predicted_class|lower or 'crack' in insp.predicted_class|lower %}bg-danger text-white
+                                        {% elif 'bird' in insp.predicted_class|lower %}bg-warning text-dark
+                                        {% elif 'dust' in insp.predicted_class|lower %}bg-warning-subtle text-dark border
+                                        {% elif 'unable' in insp.predicted_class|lower %}bg-secondary text-white
+                                        {% else %}bg-emerald text-white{% endif %} rounded-pill">
+                                        {{ insp.predicted_class }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-sg-ink fw-bold">{{ insp.confidence_score }}%</span>
+                                </td>
+                                <td>
+                                    {% if insp.review_status == 'technician_verified' %}
+                                        {% if insp.verified_outcome and 'normal' in insp.verified_outcome|lower %}
+                                            <span class="badge bg-success-subtle text-success border border-success rounded-pill">
+                                                <i class="bi bi-patch-check-fill me-1"></i> Verified Normal
+                                            </span>
+                                        {% elif insp.verified_outcome %}
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning rounded-pill">
+                                                <i class="bi bi-shield-check me-1"></i> Verified: {{ insp.verified_outcome }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success border border-success rounded-pill">
+                                                <i class="bi bi-patch-check-fill me-1"></i> Verified
+                                            </span>
+                                        {% endif %}
+                                    {% elif insp.review_status == 'flagged' %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill">
+                                            <i class="bi bi-flag-fill me-1"></i> Flagged
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-secondary border rounded-pill">AI Predicted</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'result_detail' insp.id %}" class="btn btn-sm btn-outline-emerald rounded-pill px-2 py-1">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-journal-x text-muted fs-2 mb-2"></i>
+                    <p class="text-sg-muted small mb-0">No past inspections recorded for this module.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Linked Maintenance Issues -->
+    <div class="col-lg-5">
+        <div class="card sg-card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-sg-ink mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-tools text-emerald"></i>
+                        <span>Maintenance Issues</span>
+                    </h5>
+                    <span class="text-sg-muted small">Work orders &amp; remediation tracking</span>
+                </div>
+                <a href="{% url 'issue_create' %}?panel_id={{ panel.id }}" class="btn btn-sm btn-outline-emerald rounded-pill px-3">
+                    <i class="bi bi-plus-circle me-1"></i> Log Request
+                </a>
+            </div>
+            <div class="card-body p-4">
+                {% if issues %}
+                <div class="d-flex flex-column gap-3">
+                    {% for issue in issues %}
+                    <div class="p-3 bg-light rounded-4 border d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <a href="{% url 'issue_detail' issue.id %}" class="fw-bold text-decoration-none text-sg-ink">
+                                    {{ issue.title }}
+                                </a>
+                                <div class="text-sg-muted smaller">Created {{ issue.created_at|date:"M d, Y" }} by {{ issue.user.username|default:"System" }}</div>
+                            </div>
+                            <span class="badge 
+                                {% if issue.status == 'Open' %}bg-primary
+                                {% elif issue.status == 'In Progress' or issue.status == 'Assigned' %}bg-warning text-dark
+                                {% elif issue.status == 'Resolved' or issue.status == 'Closed' %}bg-success
+                                {% else %}bg-secondary{% endif %} rounded-pill">
+                                {{ issue.status }}
+                            </span>
+                        </div>
+                        {% if issue.assigned_technician %}
+                        <div class="text-sg-muted smaller">
+                            <i class="bi bi-person-fill text-emerald me-1"></i> Tech: <strong>{{ issue.assigned_technician.username }}</strong>
+                        </div>
+                        {% endif %}
+                        {% if issue.resolution_notes %}
+                        <div class="smaller text-success p-2 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 mt-1">
+                            <i class="bi bi-check2-circle me-1"></i> <strong>Resolution:</strong> {{ issue.resolution_notes|truncatechars:120 }}
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center small pt-2 border-top">
+                            <span class="text-sg-muted">Priority: <strong class="text-sg-ink">{{ issue.priority }}</strong></span>
+                            <a href="{% url 'issue_detail' issue.id %}" class="btn btn-sm btn-link text-emerald p-0 text-decoration-none">
+                                Details &rarr;
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-check2-circle text-success fs-2 mb-2"></i>
+                    <h6 class="fw-bold text-sg-ink">No Active Work Orders</h6>
+                    <p class="text-sg-muted small mb-3">There are no open maintenance issues or service requests logged for this solar panel.</p>
+                    <a href="{% url 'issue_create' %}?panel_id={{ panel.id }}" class="btn btn-outline-emerald rounded-pill btn-sm px-3">
+                        <i class="bi bi-tools me-1"></i> Request Maintenance
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

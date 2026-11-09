@@ -1,0 +1,329 @@
+{
+  "test_count": 485,
+  "accuracy": 0.8804123711340206,
+  "macro_p": 0.787948141498274,
+  "macro_r": 0.8365863989711221,
+  "macro_f1": 0.7988230524803416,
+  "weighted_f1": 0.8850660108122074,
+  "confusion_matrix": [
+    [
+      20,
+      3,
+      2,
+      0
+    ],
+    [
+      14,
+      116,
+      16,
+      3
+    ],
+    [
+      6,
+      6,
+      264,
+      2
+    ],
+    [
+      4,
+      1,
+      1,
+      27
+    ]
+  ],
+  "per_class": {
+    "Bird-Dropping": {
+      "precision": 0.45454545454545453,
+      "recall": 0.8,
+      "f1": 0.5797101449275363,
+      "support": 25
+    },
+    "Dusty": {
+      "precision": 0.9206349206349206,
+      "recall": 0.7785234899328859,
+      "f1": 0.8436363636363636,
+      "support": 149
+    },
+    "Normal": {
+      "precision": 0.9328621908127208,
+      "recall": 0.9496402877697842,
+      "f1": 0.9411764705882353,
+      "support": 278
+    },
+    "Surface-Damage": {
+      "precision": 0.84375,
+      "recall": 0.8181818181818182,
+      "f1": 0.8307692307692308,
+      "support": 33
+    }
+  },
+  "confidence_stats": {
+    "overall_mean": 84.04203727687756,
+    "overall_median": 91.76143407821655,
+    "correct_mean": 87.67004209882482,
+    "wrong_mean": 57.33241557047285
+  },
+  "misclassified_count": 58,
+  "misclassified_samples": [
+    {
+      "source": "kaggle:Faulty_solar_panel/Bird-drop/Bird (94).jpg",
+      "filename": "Faulty_solar_panel/Bird-drop/Bird (94).jpg",
+      "true": "Bird-Dropping",
+      "pred": "Dusty",
+      "conf": 44.28919851779938,
+      "probs": {
+        "Bird-Dropping": 8.44,
+        "Dusty": 44.29,
+        "Normal": 28.31,
+        "Surface-Damage": 18.96
+      }
+    },
+    {
+      "source": "roboflow:screenshot-2023-04-02-002554_png_jpg",
+      "filename": "train/images/Screenshot-2023-04-02-002554_png_jpg.rf.089ae1e4ce103298906147e4a81f4a11.jpg",
+      "true": "Bird-Dropping",
+      "pred": "Normal",
+      "conf": 68.23682188987732,
+      "probs": {
+        "Bird-Dropping": 7.96,
+        "Dusty": 6.05,
+        "Normal": 68.24,
+        "Surface-Damage": 17.76
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Bird-drop/Bird (106).jpg",
+      "filename": "Faulty_solar_panel/Bird-drop/Bird (106).jpg",
+      "true": "Bird-Dropping",
+      "pred": "Dusty",
+      "conf": 82.15724229812622,
+      "probs": {
+        "Bird-Dropping": 16.23,
+        "Dusty": 82.16,
+        "Normal": 1.3,
+        "Surface-Damage": 0.31
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Bird-drop/Bird (95).jpg",
+      "filename": "Faulty_solar_panel/Bird-drop/Bird (95).jpg",
+      "true": "Bird-Dropping",
+      "pred": "Normal",
+      "conf": 35.870856046676636,
+      "probs": {
+        "Bird-Dropping": 33.46,
+        "Dusty": 29.36,
+        "Normal": 35.87,
+        "Surface-Damage": 1.31
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Bird-drop/Bird (105).jpg",
+      "filename": "Faulty_solar_panel/Bird-drop/Bird (105).jpg",
+      "true": "Bird-Dropping",
+      "pred": "Dusty",
+      "conf": 71.843421459198,
+      "probs": {
+        "Bird-Dropping": 25.75,
+        "Dusty": 71.84,
+        "Normal": 1.96,
+        "Surface-Damage": 0.45
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (67).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (67).jpg",
+      "true": "Normal",
+      "pred": "Bird-Dropping",
+      "conf": 51.910340785980225,
+      "probs": {
+        "Bird-Dropping": 51.91,
+        "Dusty": 5.79,
+        "Normal": 29.11,
+        "Surface-Damage": 13.19
+      }
+    },
+    {
+      "source": "roboflow:panel400751_png_jpg",
+      "filename": "train/images/panel400751_png_jpg.rf.6945613f77a2d687cc1fcc8ae312a265.jpg",
+      "true": "Normal",
+      "pred": "Dusty",
+      "conf": 37.49277591705322,
+      "probs": {
+        "Bird-Dropping": 4.51,
+        "Dusty": 37.49,
+        "Normal": 28.58,
+        "Surface-Damage": 29.42
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (84).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (84).jpg",
+      "true": "Normal",
+      "pred": "Dusty",
+      "conf": 45.21644413471222,
+      "probs": {
+        "Bird-Dropping": 18.41,
+        "Dusty": 45.22,
+        "Normal": 35.89,
+        "Surface-Damage": 0.49
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (38).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (38).jpg",
+      "true": "Normal",
+      "pred": "Bird-Dropping",
+      "conf": 59.0420663356781,
+      "probs": {
+        "Bird-Dropping": 59.04,
+        "Dusty": 6.05,
+        "Normal": 32.11,
+        "Surface-Damage": 2.8
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (23).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (23).jpg",
+      "true": "Normal",
+      "pred": "Bird-Dropping",
+      "conf": 50.581032037734985,
+      "probs": {
+        "Bird-Dropping": 50.58,
+        "Dusty": 0.23,
+        "Normal": 44.63,
+        "Surface-Damage": 4.56
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (102).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (102).jpg",
+      "true": "Normal",
+      "pred": "Bird-Dropping",
+      "conf": 58.91621112823486,
+      "probs": {
+        "Bird-Dropping": 58.92,
+        "Dusty": 20.13,
+        "Normal": 16.85,
+        "Surface-Damage": 4.1
+      }
+    },
+    {
+      "source": "roboflow:img_20230325_100806_jpg",
+      "filename": "train/images/IMG_20230325_100806_jpg.rf.4caf59b57a8895904a19f4c645682598.jpg",
+      "true": "Normal",
+      "pred": "Surface-Damage",
+      "conf": 44.49748992919922,
+      "probs": {
+        "Bird-Dropping": 7.25,
+        "Dusty": 10.02,
+        "Normal": 38.23,
+        "Surface-Damage": 44.5
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (58).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (58).jpg",
+      "true": "Normal",
+      "pred": "Bird-Dropping",
+      "conf": 41.00198447704315,
+      "probs": {
+        "Bird-Dropping": 41.0,
+        "Dusty": 17.27,
+        "Normal": 39.05,
+        "Surface-Damage": 2.68
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (41).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (41).jpg",
+      "true": "Normal",
+      "pred": "Dusty",
+      "conf": 43.97827982902527,
+      "probs": {
+        "Bird-Dropping": 1.58,
+        "Dusty": 43.98,
+        "Normal": 43.54,
+        "Surface-Damage": 10.91
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (111).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (111).jpg",
+      "true": "Normal",
+      "pred": "Dusty",
+      "conf": 47.19347357749939,
+      "probs": {
+        "Bird-Dropping": 29.3,
+        "Dusty": 47.19,
+        "Normal": 22.26,
+        "Surface-Damage": 1.24
+      }
+    },
+    {
+      "source": "roboflow:panel407551_png_jpg",
+      "filename": "valid/images/panel407551_png_jpg.rf.c96f54f624fdbc4ee6307aded4c52817.jpg",
+      "true": "Normal",
+      "pred": "Surface-Damage",
+      "conf": 74.42793250083923,
+      "probs": {
+        "Bird-Dropping": 3.02,
+        "Dusty": 6.21,
+        "Normal": 16.34,
+        "Surface-Damage": 74.43
+      }
+    },
+    {
+      "source": "roboflow:img_20230325_100748_jpg",
+      "filename": "train/images/IMG_20230325_100748_jpg.rf.456bc38e105e89e6d5dce369a1bc8dee.jpg",
+      "true": "Normal",
+      "pred": "Dusty",
+      "conf": 39.640867710113525,
+      "probs": {
+        "Bird-Dropping": 13.94,
+        "Dusty": 39.64,
+        "Normal": 35.81,
+        "Surface-Damage": 10.61
+      }
+    },
+    {
+      "source": "roboflow:clean7903101_png_jpg",
+      "filename": "valid/images/clean7903101_png_jpg.rf.2fd6eec520c55c1ef01a8681155ecb6c.jpg",
+      "true": "Normal",
+      "pred": "Dusty",
+      "conf": 42.916831374168396,
+      "probs": {
+        "Bird-Dropping": 5.87,
+        "Dusty": 42.92,
+        "Normal": 10.52,
+        "Surface-Damage": 40.69
+      }
+    },
+    {
+      "source": "kaggle:Faulty_solar_panel/Clean/Clean (60).jpg",
+      "filename": "Faulty_solar_panel/Clean/Clean (60).jpg",
+      "true": "Normal",
+      "pred": "Bird-Dropping",
+      "conf": 59.416598081588745,
+      "probs": {
+        "Bird-Dropping": 59.42,
+        "Dusty": 34.25,
+        "Normal": 5.5,
+        "Surface-Damage": 0.84
+      }
+    },
+    {
+      "source": "roboflow:img_20241003_092550_309_jpg",
+      "filename": "valid/images/IMG_20241003_092550_309_jpg.rf.ca48089d5f1e9d863fca0b3e90dd04cf.jpg",
+      "true": "Dusty",
+      "pred": "Bird-Dropping",
+      "conf": 72.62588739395142,
+      "probs": {
+        "Bird-Dropping": 72.63,
+        "Dusty": 15.49,
+        "Normal": 2.1,
+        "Surface-Damage": 9.79
+      }
+    }
+  ]
+}

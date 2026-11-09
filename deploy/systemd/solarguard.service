@@ -1,0 +1,30 @@
+[Unit]
+Description=SolarGuard AI Solar Inspection Platform (Gunicorn WSGI)
+After=network.target
+
+[Service]
+Type=notify
+User=solarguard
+Group=solarguard
+WorkingDirectory=/var/www/solarguard
+EnvironmentFile=/etc/solarguard/solarguard.env
+
+# Execution command
+ExecStart=/var/www/solarguard/venv/bin/gunicorn solarguard_project.wsgi:application --config /var/www/solarguard/deploy/gunicorn.conf.py
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+
+# Process recovery & resilience
+Restart=always
+RestartSec=5s
+
+# Security sandboxing
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/www/solarguard/media /var/www/solarguard/db.sqlite3 /var/www/solarguard/db.sqlite3-journal /var/www/solarguard/backups /var/log/solarguard
+
+[Install]
+WantedBy=multi-user.target
